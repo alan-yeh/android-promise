@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/android-promise.iml" filepath="$PROJECT_DIR$/android-promise.iml" />
+      <module fileurl="file://$PROJECT_DIR$/promise-core/promise-core.iml" filepath="$PROJECT_DIR$/promise-core/promise-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/promise-sample-core/promise-sample-core.iml" filepath="$PROJECT_DIR$/promise-sample-core/promise-sample-core.iml" />
+    </modules>
+  </component>
+</project>
