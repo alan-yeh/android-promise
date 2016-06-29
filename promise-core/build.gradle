@@ -7,19 +7,35 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 24
-        versionCode 1
-        versionName "1.0"
     }
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
+    lintOptions {
+        xmlReport false
+        warningsAsErrors true
+        quiet false
+        showAll true
+        disable 'OldTargetApi'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_6
+        targetCompatibility JavaVersion.VERSION_1_6
     }
 }
 
-dependencies {
-    compile 'com.android.support:appcompat-v7:24.+'
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+android.libraryVariants.all { variant ->
+    def name = variant.buildType.name
+    def task = project.tasks.create "jar${name.capitalize()}", Jar
+    task.dependsOn variant.javaCompile
+    task.from variant.javaCompile.destinationDir
+    artifacts.add('archives', task);
+}
+
+apply from: '../upload.gradle'
+
+afterEvaluate { project ->
+    android.libraryVariants.all { variant ->
+        tasks.androidJavadocs.doFirst {
+            classpath += files(variant.javaCompile.classpath.files)
+        }
+    }
 }
