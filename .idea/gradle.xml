@@ -10,14 +10,14 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/promise-core" />
-            <option value="$PROJECT_DIR$/promise-sample-core" />
+            <option value="$PROJECT_DIR$/promise-core-sample" />
           </set>
         </option>
         <option name="myModules">
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/promise-core" />
-            <option value="$PROJECT_DIR$/promise-sample-core" />
+            <option value="$PROJECT_DIR$/promise-core-sample" />
           </set>
         </option>
       </GradleProjectSettings>
