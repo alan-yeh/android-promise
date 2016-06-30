@@ -403,10 +403,3 @@ public <V> Promise<V> always(final PromiseCallback<R, V> always){...}
 //异步执行,正确或失败都会执行
 public <V> Promise<V> alwaysAsync(final PromiseCallback<R, V> always){...}
 ```
->地址：广州市天河区长湴白沙水路89号长湴创意园A栋
-
->邮编：510000
-
->公司网址：www.minstone.com.cn
-
->Copyright &copy; 2016年 Minstone. All rights reserved.
