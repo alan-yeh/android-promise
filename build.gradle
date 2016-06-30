@@ -13,13 +13,9 @@ buildscript {
     }
 }
 
-def isReleaseBuild() {
-    return version.contains("SNAPSHOT") == false
-}
-
 allprojects {
-    group = 'cn.yerl.android'
-    version = '1.0.0-SNAPSHOT'
+    group = POM_GROUP_ID
+    version = POM_VERSION
 
     repositories {
         mavenLocal()

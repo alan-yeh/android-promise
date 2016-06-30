@@ -2,17 +2,17 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 def isReleaseBuild() {
-    return VERSION_NAME.contains("SNAPSHOT") == false
+    return POM_VERSION.contains("SNAPSHOT") == false
 }
 
 def getReleaseRepositoryUrl() {
     return hasProperty('RELEASE_REPOSITORY_URL') ? RELEASE_REPOSITORY_URL
-            : "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+            : "https://oss.sonatype.org/service/local/staging/deploy/maven2"
 }
 
 def getSnapshotRepositoryUrl() {
     return hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL
-            : "https://oss.sonatype.org/content/repositories/snapshots/"
+            : "https://oss.sonatype.org/content/repositories/snapshots"
 }
 
 def getRepositoryUsername() {
@@ -29,10 +29,6 @@ afterEvaluate { project ->
             mavenDeployer {
                 beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-                pom.groupId = GROUP
-                pom.artifactId = POM_ARTIFACT_ID
-                pom.version = VERSION_NAME
-
                 repository(url: getReleaseRepositoryUrl()) {
                     authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
                 }
@@ -41,30 +37,35 @@ afterEvaluate { project ->
                 }
 
                 pom.project {
-                    name POM_NAME
+                    groupId POM_GROUP_ID
+                    artifactId POM_ARTIFACT_ID
+                    version POM_VERSION
                     packaging POM_PACKAGING
-                    description POM_DESCRIPTION
-                    url POM_URL
 
-                    scm {
-                        url POM_SCM_URL
-                        connection POM_SCM_CONNECTION
-                        developerConnection POM_SCM_DEV_CONNECTION
-                    }
+
+                    name SONATYPE_NAME
+                    description SONATYPE_DESCRIPTION
+                    url SONATYPE_URL
 
                     licenses {
                         license {
-                            name POM_LICENCE_NAME
-                            url POM_LICENCE_URL
-                            distribution POM_LICENCE_DIST
+                            name SONATYPE_LICENCE_NAME
+                            url SONATYPE_LICENCE_URL
                         }
                     }
 
                     developers {
                         developer {
-                            id POM_DEVELOPER_ID
-                            name POM_DEVELOPER_NAME
+                            name SONATYPE_DEVELOPER_NAME
+                            email SONATYPE_DEVELOPER_EMAIL
+                            organizationUrl SONATYPE_DEVELOPER_ORGANIZATION_URL
                         }
+                    }
+
+                    scm {
+                        connection SONATYPE_SCM_CONNECTION
+                        developerConnection SONATYPE_SCM_DEVELOPER_CONNECTION
+                        url SONATYPE_SCM_URL
                     }
                 }
             }
@@ -76,9 +77,9 @@ afterEvaluate { project ->
         configuration = configurations['archives']
         repositories {
             mavenDeployer {
-                pom.groupId = GROUP
+                pom.groupId = POM_GROUP_ID
                 pom.artifactId = POM_ARTIFACT_ID
-                pom.version = VERSION_NAME
+                pom.version = POM_VERSION
 
                 repository url: "file://${System.properties['user.home']}/.m2/repository"
             }
@@ -86,7 +87,7 @@ afterEvaluate { project ->
     }
 
     signing {
-        required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
+        //required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
         sign configurations.archives
     }
 

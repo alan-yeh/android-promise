@@ -1,3 +1,28 @@
+# Promise
+## 引用
+### Gradle
+
+```
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  compile 'cn.yerl:android-promise:1.0.1'
+}
+```
+### Maven
+```xml
+  <dependencies>
+    <dependency>
+      <groupId>cn.yerl</groupId>
+      <artifactId>android-promise</artifactId>
+      <version>1.0.1</version>
+    </dependency>
+  </dependencies>
+```
+
+
 ## 目录
 
 [**简介**](#简介)
