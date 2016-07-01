@@ -22,6 +22,15 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_7
         targetCompatibility JavaVersion.VERSION_1_7
     }
+
+    // 在JavaCompile之后,将源代码打包成jar包
+    libraryVariants.all { variant ->
+        def name = variant.buildType.name
+        def task = project.tasks.create "jar${name.capitalize()}", Jar
+        task.dependsOn variant.javaCompile
+        task.from variant.javaCompile.destinationDir
+        artifacts.add('archives', task);
+    }
 }
 
 afterEvaluate { project ->
