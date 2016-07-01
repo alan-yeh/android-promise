@@ -11,6 +11,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/promise-core" />
             <option value="$PROJECT_DIR$/promise-core-sample" />
+            <option value="$PROJECT_DIR$/promise-http" />
           </set>
         </option>
         <option name="myModules">
@@ -18,6 +19,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/promise-core" />
             <option value="$PROJECT_DIR$/promise-core-sample" />
+            <option value="$PROJECT_DIR$/promise-http" />
           </set>
         </option>
       </GradleProjectSettings>

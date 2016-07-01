@@ -1,1 +1,1 @@
-include ':promise-core', ':promise-core', ':promise-core-sample'
+include ':promise-core', ':promise-core', ':promise-core-sample', ':promise-http'

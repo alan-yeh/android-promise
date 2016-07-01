@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/android-promise.iml" filepath="$PROJECT_DIR$/android-promise.iml" />
       <module fileurl="file://$PROJECT_DIR$/promise-core/promise-core.iml" filepath="$PROJECT_DIR$/promise-core/promise-core.iml" />
       <module fileurl="file://$PROJECT_DIR$/promise-core-sample/promise-core-sample.iml" filepath="$PROJECT_DIR$/promise-core-sample/promise-core-sample.iml" />
+      <module fileurl="file://$PROJECT_DIR$/promise-http/promise-http.iml" filepath="$PROJECT_DIR$/promise-http/promise-http.iml" />
     </modules>
   </component>
 </project>
