@@ -1,5 +1,6 @@
 apply plugin: 'com.android.library'
-apply from: '../upload.gradle'
+
+version '1.0.0'
 
 android {
     compileSdkVersion 24
@@ -8,40 +9,69 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 24
-        group = POM_GROUP_ID
-        version = POM_VERSION
-    }
+        versionCode 1
+        versionName "1.0"
 
-    lintOptions {
-        xmlReport false
-        quiet true
-        disable 'OldTargetApi'
-    }
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
     }
-
-    // 在JavaCompile之后,将源代码打包成jar包
-    libraryVariants.all { variant ->
-        def name = variant.buildType.name
-        def task = project.tasks.create "jar${name.capitalize()}", Jar
-        task.dependsOn variant.javaCompile
-        task.from variant.javaCompile.destinationDir
-        artifacts.add('archives', task);
+    android {
+        compileOptions {
+            sourceCompatibility JavaVersion.VERSION_1_7
+            targetCompatibility JavaVersion.VERSION_1_7
+        }
     }
-}
-
-afterEvaluate { project ->
-    android.libraryVariants.all { variant ->
-        tasks.androidJavadocs.doFirst {
-            classpath += files(variant.javaCompile.classpath.files)
+    
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+}
+
+apply plugin: 'nexus'
+
+nexus {
+    repository {
+        username project.ext["nexus.username"]
+        password project.ext["nexus.password"]
+    }
+
+    signatory {
+        keyId project.ext["signatory.keyId"]
+        password project.ext["signatory.password"]
+    }
+
+    pom {
+        groupId 'cn.yerl.android'
+        artifactId 'promise-core'
+
+        name 'Android Promise Core'
+        description 'A promise implementation for Android'
+        url 'https://github.com/alan-yeh/android-promise'
+
+        scm {
+            url 'https://github.com/alan-yeh/android-promise'
+            connection 'scm:https://github.com/alan-yeh/android-promise.git'
+            developerConnection 'scm:git@github.com:alan-yeh/android-promise.git'
+        }
+
+        licenses {
+            license {
+                name 'The Apache Software License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
+
+        developers {
+            developer {
+                name 'Alan Yeh'
+                email 'alan@yerl.cn'
+            }
+        }
+    }
 }

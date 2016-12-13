@@ -216,6 +216,8 @@ public class Promise<R> {
 
     /**
      * 直接返回promise
+     * @param promise promise
+     * @return promise
      */
     public static <V> Promise<V> resolve(Promise<V> promise){
         return promise;
@@ -223,6 +225,8 @@ public class Promise<R> {
 
     /**
      * 返回一个Fulfilled状态的Promise
+     * @param result promise result
+     * @return promise
      */
     public static <T, V> Promise<V> resolve(final T result){
         return new Promise<V>(new PromiseCallbackWithResolver<T, V>(){
@@ -235,6 +239,8 @@ public class Promise<R> {
 
     /**
      * 返回一个Rejected状态的Promise
+     * @param ex promise error
+     * @return promise
      */
     public static <T, V> Promise<V> resolve(final RuntimeException ex){
         return new Promise< V>(new PromiseCallbackWithResolver<T, V>(){
@@ -251,6 +257,8 @@ public class Promise<R> {
      *    A会等最慢的那个Promise对象变成成功态(Fulfilled)后才把自己变成成功态.
      * 2. 只要其中一个Promise对象变成失败态(Rejected),包装后的A就会变成Rejected,并且每一个Rejected传递的值,
      *    会传递给A后面的catch
+     * @param promises List of promise
+     * @return promise
      */
     public static <T, V> Promise< List<V>> all(final List<Promise<V>> promises){
         return new Promise<List<V>>(new PromiseCallbackWithResolver<T, List<V>>() {
@@ -282,6 +290,8 @@ public class Promise<R> {
      * 包装一列列的Promise对象,返回一个包装后的Promise对象,称之为R
      * 1. 只要其中的一个Promise对象变成成功态(Fulfilled)后,这个包装后的R就会变成成功态(Fulfilled).
      * 2. 当所有的promise对象都变成失败态(Rejected)后,这个包装后的R才会变成失败态.
+     * @param promises List of promise
+     * @return promise
      */
     public static <T, V> Promise<V> race(final List<Promise<V>> promises){
         return new Promise<V>(new PromiseCallbackWithResolver<T, V>() {
@@ -306,6 +316,8 @@ public class Promise<R> {
 
     /**
      * 主线程执行
+     * @param then next step
+     * @return promise
      */
     public <V> Promise<V> then(final PromiseCallback<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -331,6 +343,8 @@ public class Promise<R> {
 
     /**
      * 附加Promise
+     * @param thenPromise next step
+     * @return promise
      */
     public <V> Promise<V> then(final Promise<V> thenPromise){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -343,6 +357,8 @@ public class Promise<R> {
 
     /**
      * 主线程执行,使用 Resolver来回调
+     * @param then next step
+     * @return promise
      */
     public <V> Promise<V> then(final PromiseCallbackWithResolver<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -368,6 +384,8 @@ public class Promise<R> {
 
     /**
      * 异步执行
+     * @param then next step
+     * @return promise
      */
     public <V> Promise<V> thenAsync(final PromiseCallback<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -393,6 +411,8 @@ public class Promise<R> {
 
     /**
      * 异步执行,使用Resolver来回调
+     * @param then next step
+     * @return promise
      */
     public <V> Promise<V> thenAsync(final PromiseCallbackWithResolver<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -418,6 +438,8 @@ public class Promise<R> {
 
     /**
      * 延迟执迁
+     * @param then next step
+     * @return promise
      */
     public <V> Promise<V> thenDelay(final long delayMillis, final PromiseCallback<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -443,6 +465,9 @@ public class Promise<R> {
 
     /**
      * 延迟执行,使用Resolver回调
+     * @param delayMillis delay time
+     * @param then next step
+     * @return promise
      */
     public <V> Promise<V> thenDelay(final long delayMillis, final PromiseCallbackWithResolver<R, V> then) {
 		return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -469,6 +494,8 @@ public class Promise<R> {
 
     /**
      * 同步处理错误
+     * @param error handle error
+     * @return promise
      */
     public <V > Promise<V> error(final PromiseCallback<RuntimeException, V> error){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -494,6 +521,8 @@ public class Promise<R> {
 
     /**
      * 异步处理错误
+     * @param error handle error
+     * @return promise
      */
     public <V > Promise<V> errorAsync(final PromiseCallback<RuntimeException, V> error){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -519,6 +548,8 @@ public class Promise<R> {
 
     /**
      * 主线程执行,正确或失败都会执行
+     * @param always handle always
+     * @return promise
      */
     public <V> Promise<V> always(final PromiseCallback<R, V> always){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -540,6 +571,8 @@ public class Promise<R> {
 
     /**
      * 异步执行,正确或失败都会执行
+     * @param always handle always
+     * @return promise
      */
     public <V> Promise<V> alwaysAsync(final PromiseCallback<R, V> always){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {

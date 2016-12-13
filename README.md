@@ -8,19 +8,10 @@ repositories {
 }
 
 dependencies {
-  compile 'cn.yerl:android-promise:1.0.1'
+  compile 'cn.yerl.android:promise-core:1.0.0'
 }
 ```
-### Maven
-```xml
-  <dependencies>
-    <dependency>
-      <groupId>cn.yerl</groupId>
-      <artifactId>android-promise</artifactId>
-      <version>1.0.1</version>
-    </dependency>
-  </dependencies>
-```
+
 
 
 ## 目录
@@ -403,3 +394,4 @@ public <V> Promise<V> always(final PromiseCallback<R, V> always){...}
 //异步执行,正确或失败都会执行
 public <V> Promise<V> alwaysAsync(final PromiseCallback<R, V> always){...}
 ```
+
