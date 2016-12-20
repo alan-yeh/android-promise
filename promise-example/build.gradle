@@ -1,13 +1,14 @@
 apply plugin: 'com.android.application'
+apply plugin: 'android-config'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.0"
+    compileSdkVersion project.ext["compileSdkVersion"]
+    buildToolsVersion project.ext["buildToolsVersion"]
 
     defaultConfig {
         applicationId "cn.yerl.android.promise.example"
-        minSdkVersion 14
-        targetSdkVersion 24
+        minSdkVersion project.ext["minSdkVersion"]
+        targetSdkVersion project.ext["targetSdkVersion"]
         versionCode 1
         versionName "1.0"
 
@@ -27,9 +28,8 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:24.1.1'
+    compile "com.android.support:appcompat-v7:$supportVersion"
     testCompile 'junit:junit:4.12'
 
-    compile project(":promise-core")
-    compile project(":promise-http")
+    compile 'cn.yerl.android:promise-http:1.0.0'
 }

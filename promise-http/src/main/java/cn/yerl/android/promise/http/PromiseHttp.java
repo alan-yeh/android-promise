@@ -93,7 +93,7 @@ public class PromiseHttp {
     private Map<String, String> sharedCookies = new LinkedHashMap<>();
 
     public Promise<PromiseResponse> execute(final PromiseRequest request){
-        return new Promise<PromiseResponse>(new PromiseCallbackWithResolver<Object, PromiseResponse>() {
+        return new Promise<>(new PromiseCallbackWithResolver<Object, PromiseResponse>() {
             @Override
             public void call(Object arg, final PromiseResolver resolver) {
                 String urlString = _processUrl(baseUrl, request);
@@ -202,7 +202,7 @@ public class PromiseHttp {
     }
 
     public Promise<PromiseResponse> download(final PromiseRequest request){
-        return new Promise<PromiseResponse>(new PromiseCallbackWithResolver<Object, PromiseResponse>() {
+        return new Promise<>(new PromiseCallbackWithResolver<Object, PromiseResponse>() {
             @Override
             public void call(Object arg, final PromiseResolver resolver) {
                 if (cachePath == null){
