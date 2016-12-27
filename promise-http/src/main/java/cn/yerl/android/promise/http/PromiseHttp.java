@@ -3,6 +3,7 @@ package cn.yerl.android.promise.http;
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
 import com.loopj.android.http.HttpDelete;
 import com.loopj.android.http.HttpGet;
+import com.loopj.android.http.RequestHandle;
 import com.loopj.android.http.RequestParams;
 import com.loopj.android.http.ResponseHandlerInterface;
 import com.loopj.android.http.TextHttpResponseHandler;
@@ -38,6 +39,15 @@ public class PromiseHttp {
     private File cachePath;
     private List<ILogger> loggers = new ArrayList<>();
 
+    /**
+     * 添加网络请求日志记录功能
+     *
+     * @see ILogger 日志接口
+     * @see cn.yerl.android.promise.http.logger.LogcatLogger 控制台日志输出
+     * @see cn.yerl.android.promise.http.logger.FileLogger 文件日志输出
+     * @param loggers 日志
+     * @return PromiseHttp
+     */
     public PromiseHttp setLogger(ILogger... loggers){
         this.loggers = Arrays.asList(loggers);
         return this;
@@ -47,6 +57,15 @@ public class PromiseHttp {
         return baseUrl;
     }
 
+    /**
+     * 设置基础地址
+     * eg:
+     * baseUrl = http://yerl.cn/api/v3
+     * PromiseRequest.GET("group") 最终访问的是http://yerl.cn/api/v3/group
+     * PromiseRequest.GET("/group") 最终访问的是http://yerl.cn/group
+     * @param baseUrl 基础地址
+     * @return PromiseHttp
+     */
     public PromiseHttp setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
         return this;
@@ -56,6 +75,12 @@ public class PromiseHttp {
         return cachePath;
     }
 
+    /**
+     * 设置下载的缓存目录
+     * 如果没有设置此项，使用download方法时会抛出异常
+     * @param cachePath 缓存目录
+     * @return PromiseHttp
+     */
     public PromiseHttp setCachePath(File cachePath) {
         this.cachePath = cachePath;
         return this;
@@ -68,6 +93,11 @@ public class PromiseHttp {
     }
 
     private static PromiseHttp instance;
+
+    /**
+     * PromiseHttp 单例
+     * @return PromiseHttp
+     */
     public static PromiseHttp client(){
         if (instance == null){
             synchronized (PromiseHttp.class){
@@ -79,21 +109,47 @@ public class PromiseHttp {
         return instance;
     }
 
+    /**
+     * 共享Headers
+     */
     private Map<String, String> sharedHeaders = new LinkedHashMap<>();
+
+    /**
+     * 为所有的请求都添加一个Header
+     *
+     * @param key Header Key
+     * @param value Header Value
+     * @return PromiseHttp
+     */
     public PromiseHttp addSharedHeader(String key, String value){
         this.sharedHeaders.put(key, value);
         return this;
     }
+
+    /**
+     * 为所有请求都添加Headers
+     *
+     * @param headers Header键值对
+     * @return PromiseHttp
+     */
     public PromiseHttp addSharedHeaders(Map<String, String> headers){
         this.sharedHeaders.putAll(headers);
         return this;
     }
 
+    /**
+     * 执行网络请求
+     *
+     * 非下载请求，全部使用这个方法来执行
+     *
+     * @param request Http请求
+     * @return Promise with PromiseResponse
+     */
     public Promise<PromiseResponse> execute(final PromiseRequest request){
         return new Promise<>(new PromiseCallbackWithResolver<Object, PromiseResponse>() {
             @Override
             public void call(Object arg, PromiseResolver resolver) {
-                _execute(request, getTextHandler(request, resolver));
+                request.handler = _execute(request, getTextHandler(request, resolver));
             }
         }).alwaysAsync(new PromiseCallback<Object, PromiseResponse>() {
             @Override
@@ -110,11 +166,19 @@ public class PromiseHttp {
         });
     }
 
+    /**
+     * 执行下载请求
+     *
+     * 所有的下载请求都使用这个方法来执行，非下载请求使用execute
+     *
+     * @param request Http请求
+     * @return Promise with PromiseResponse
+     */
     public Promise<PromiseResponse> download(final PromiseRequest request){
         return new Promise<>(new PromiseCallbackWithResolver<Object, PromiseResponse>() {
             @Override
             public void call(Object arg, PromiseResolver resolver) {
-                _execute(request, getDownloadHandler(request, resolver));
+                request.handler = _execute(request, getDownloadHandler(request, resolver));
             }
         }).alwaysAsync(new PromiseCallback<Object, PromiseResponse>() {
             @Override
@@ -131,7 +195,10 @@ public class PromiseHttp {
         });
     }
 
-    private void _execute(final PromiseRequest request, final ResponseHandlerInterface handler){
+    /*
+     * 真正执行请求的地方
+     */
+    private RequestHandle _execute(final PromiseRequest request, final ResponseHandlerInterface handler){
         // 处理URL，将QueryParam拼接在url后
         URI requestURI = ProcessUtils.processURI(baseUrl, request);
 
@@ -180,9 +247,12 @@ public class PromiseHttp {
         Header[] headers = ProcessUtils.processHeader(sharedHeaders, request.getHeaders());
         req.setHeaders(headers);
 
-        httpClient.sendRequest(req, handler);
+        return httpClient.sendRequest(req, handler);
     }
 
+    /*
+     * 非下载请求都用TextHttpResponseHandler来处理
+     */
     private ResponseHandlerInterface getTextHandler(final PromiseRequest request, final PromiseResolver resolver){
         return new TextHttpResponseHandler() {
             @Override
@@ -197,7 +267,16 @@ public class PromiseHttp {
         };
     }
 
+    /*
+     * 下载请求都用FileAsyncHttpResponseHandler来处理
+     * 会自动生成推荐的文件名
+     */
     private ResponseHandlerInterface getDownloadHandler(final PromiseRequest request, final PromiseResolver resolver){
+        if (cachePath == null){
+            resolver.resolve(new UnsupportedOperationException("请先设置cachePath后再使用下载功能"));
+            return null;
+        }
+
         URI uri = ProcessUtils.processURI(baseUrl, request);
 
         String suggestFileName = uri.getPath().substring(uri.getPath().lastIndexOf("/") + 1);

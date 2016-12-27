@@ -10,10 +10,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 /**
  * Android Promise
- * Created by Alan Yeh on 16/3/17.
+ * @param <R> 返回值类型
+ * @author Alan Yeh
+ * @since 16/3/17
  */
 public class Promise<R> {
     static final ExecutorService barrier = Executors.newSingleThreadExecutor();
@@ -33,18 +34,21 @@ public class Promise<R> {
         Rejected
     }
 
+
+    private State state;
     /**
      * Promise 当前状态
+     * @return State
      */
-    private State state;
     public State getState(){
         return state;
     }
 
+    private Object value;
     /**
      * Promise最终结果
+     * @return Object
      */
-    private Object value;
     public Object getValue(){
         return value;
     }
@@ -65,6 +69,8 @@ public class Promise<R> {
 
     /**
      * 创建一个未执行的Promise
+     * @param resolver Promise Resolver
+     * @param <T> 返回值类型
      */
     public <T> Promise(final PromiseCallbackWithResolver<T, R> resolver){
         this.state = State.Pending;
@@ -126,6 +132,9 @@ public class Promise<R> {
 
     /**
      * 创建延迟执行的Promise,使用Resolver回调
+     * @param delayMillis 延迟时间，毫秒
+     * @param resolver PromiseCallbackWithResolver
+     * @param <T> 返回值类型
      */
     public <T> Promise(final long delayMillis, final PromiseCallbackWithResolver<T, R> resolver){
         this(new PromiseCallbackWithResolver<T, R>() {
@@ -143,6 +152,9 @@ public class Promise<R> {
 
     /**
      * 创建延迟执行的Promise
+     * @param delayMillis 延迟时间，毫秒
+     * @param callback PromiseCallback
+     * @param <T> 返回值类型
      */
     public <T> Promise(final long delayMillis, final PromiseCallback<T, R> callback){
         this(new PromiseCallbackWithResolver<T, R>() {
@@ -160,6 +172,8 @@ public class Promise<R> {
 
     /**
      * 主线程执行的Promise
+     * @param callback PromiseCallback
+     * @param <T> 返回值类型
      */
     public <T> Promise(final PromiseCallback<T, R> callback){
         this(new PromiseCallbackWithResolver<T, R>() {
@@ -172,7 +186,8 @@ public class Promise<R> {
 
     /**
      * 获取一个Rejected状态的Promise
-     * @param error
+     * @param error 错误
+     * @param <T> 返回值类型
      */
     public <T> Promise(final RuntimeException error){
         this(new PromiseCallbackWithResolver<T, R>() {
@@ -198,6 +213,11 @@ public class Promise<R> {
 
     /**
      * 创建一个Promise,并拼接在Promise(self)的执行链中
+     * @param self Promise
+     * @param then 下一步
+     * @param <T> 参数类型
+     * @param <V> 返回值类型
+     * @return Promise
      */
     private <T, V> Promise<V> __pipe(final Promise<R> self, final PromiseCallbackWithResolver<R, V> then){
         return new Promise<V>(new PromiseCallbackWithResolver<T, V>() {
@@ -216,8 +236,9 @@ public class Promise<R> {
 
     /**
      * 直接返回promise
-     * @param promise promise
-     * @return promise
+     * @param promise Promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public static <V> Promise<V> resolve(Promise<V> promise){
         return promise;
@@ -225,8 +246,10 @@ public class Promise<R> {
 
     /**
      * 返回一个Fulfilled状态的Promise
-     * @param result promise result
-     * @return promise
+     * @param result 结果
+     * @param <T> 参数类型
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public static <T, V> Promise<V> resolve(final T result){
         return new Promise<V>(new PromiseCallbackWithResolver<T, V>(){
@@ -239,8 +262,10 @@ public class Promise<R> {
 
     /**
      * 返回一个Rejected状态的Promise
-     * @param ex promise error
-     * @return promise
+     * @param ex 错误
+     * @param <T> 参数类型
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public static <T, V> Promise<V> resolve(final RuntimeException ex){
         return new Promise< V>(new PromiseCallbackWithResolver<T, V>(){
@@ -258,8 +283,11 @@ public class Promise<R> {
      * 2. 只要其中一个Promise对象变成失败态(Rejected),包装后的A就会变成Rejected,并且每一个Rejected传递的值,
      *    会传递给A后面的catch
      * @param promises List of promise
-     * @return promise
+     * @param <T> 参数类型
+     * @param <V> 返回值类型
+     * @return Promise
      */
+
     public static <T, V> Promise< List<V>> all(final List<Promise<V>> promises){
         return new Promise<List<V>>(new PromiseCallbackWithResolver<T, List<V>>() {
             @Override
@@ -291,7 +319,9 @@ public class Promise<R> {
      * 1. 只要其中的一个Promise对象变成成功态(Fulfilled)后,这个包装后的R就会变成成功态(Fulfilled).
      * 2. 当所有的promise对象都变成失败态(Rejected)后,这个包装后的R才会变成失败态.
      * @param promises List of promise
-     * @return promise
+     * @param <T> 参数类型
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public static <T, V> Promise<V> race(final List<Promise<V>> promises){
         return new Promise<V>(new PromiseCallbackWithResolver<T, V>() {
@@ -317,7 +347,8 @@ public class Promise<R> {
     /**
      * 主线程执行
      * @param then next step
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> then(final PromiseCallback<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -344,7 +375,8 @@ public class Promise<R> {
     /**
      * 附加Promise
      * @param thenPromise next step
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> then(final Promise<V> thenPromise){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -358,7 +390,8 @@ public class Promise<R> {
     /**
      * 主线程执行,使用 Resolver来回调
      * @param then next step
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> then(final PromiseCallbackWithResolver<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -385,7 +418,8 @@ public class Promise<R> {
     /**
      * 异步执行
      * @param then next step
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> thenAsync(final PromiseCallback<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -412,7 +446,8 @@ public class Promise<R> {
     /**
      * 异步执行,使用Resolver来回调
      * @param then next step
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> thenAsync(final PromiseCallbackWithResolver<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -437,9 +472,11 @@ public class Promise<R> {
     }
 
     /**
-     * 延迟执迁
-     * @param then next step
-     * @return promise
+     * 延迟执行
+     * @param delayMillis 延迟时间，毫秒
+     * @param then 下一步
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> thenDelay(final long delayMillis, final PromiseCallback<R, V> then){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -467,7 +504,8 @@ public class Promise<R> {
      * 延迟执行,使用Resolver回调
      * @param delayMillis delay time
      * @param then next step
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> thenDelay(final long delayMillis, final PromiseCallbackWithResolver<R, V> then) {
 		return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -495,7 +533,8 @@ public class Promise<R> {
     /**
      * 同步处理错误
      * @param error handle error
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V > Promise<V> error(final PromiseCallback<RuntimeException, V> error){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -522,7 +561,8 @@ public class Promise<R> {
     /**
      * 异步处理错误
      * @param error handle error
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V > Promise<V> errorAsync(final PromiseCallback<RuntimeException, V> error){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -549,7 +589,8 @@ public class Promise<R> {
     /**
      * 主线程执行,正确或失败都会执行
      * @param always handle always
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> always(final PromiseCallback<Object, V> always){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
@@ -572,7 +613,8 @@ public class Promise<R> {
     /**
      * 异步执行,正确或失败都会执行
      * @param always handle always
-     * @return promise
+     * @param <V> 返回值类型
+     * @return Promise
      */
     public <V> Promise<V> alwaysAsync(final PromiseCallback<Object, V> always){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {

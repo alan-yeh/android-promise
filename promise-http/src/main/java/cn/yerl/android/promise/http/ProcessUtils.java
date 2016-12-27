@@ -23,6 +23,9 @@ import cz.msebera.android.httpclient.message.BasicHeader;
  * Created by Alan Yeh on 2016/12/27.
  */
 class ProcessUtils {
+    /**
+     * 处理baseUrl和request的UrlString关系
+     */
     public static URI processURI(String baseUrl, PromiseRequest request){
         try {
             URIBuilder uriBuilder = new URIBuilder(baseUrl);
@@ -54,12 +57,15 @@ class ProcessUtils {
         }
     }
 
-    public static Header[] processHeader(Map<String, String> sharedHeaders, Map<String, String> reuquestHeaders){
+    /**
+     * 将shareHeader和requestHeader处理成Header[]
+     */
+    public static Header[] processHeader(Map<String, String> sharedHeaders, Map<String, String> requestHeaders){
         List<Header> result = new ArrayList<>();
 
         Map<String, String> headers = new HashMap<>();
         headers.putAll(sharedHeaders);
-        headers.putAll(reuquestHeaders);
+        headers.putAll(requestHeaders);
 
         for (Map.Entry<String, String> header : headers.entrySet()){
             result.add(new BasicHeader(header.getKey(), header.getValue()));
@@ -68,6 +74,9 @@ class ProcessUtils {
         return result.toArray(new Header[result.size()]);
     }
 
+    /**
+     * 处理Body参数
+     */
     public static RequestParams processParams(PromiseRequest request){
         RequestParams params = new RequestParams();
         params.setContentEncoding(request.getEncoding());

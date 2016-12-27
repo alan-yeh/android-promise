@@ -45,26 +45,52 @@ public class PromiseResponse implements Serializable {
         }
     }
 
+    /**
+     * 获取请求
+     * @return PromiseRequest
+     */
     public PromiseRequest getRequest() {
         return request;
     }
 
+    /**
+     * 获取Response Header
+     * @return Map
+     */
     public Map<String, String> getHeaders() {
         return new HashMap<>(headers);
     }
 
+    /**
+     * 获取Response Status
+     * @return int
+     */
     public int getStatusCode() {
         return statusCode;
     }
 
+    /**
+     * 获取Response String
+     * 非下载请求的结果
+     * @return String
+     */
     public String getResponseString() {
         return responseString;
     }
 
+    /**
+     * 获取Response File
+     * 下载请求的结果
+     * @return File
+     */
     public File getResponseFile() {
         return responseFile;
     }
 
+    /**
+     * 获取Response的创建时间
+     * @return Date
+     */
     public Date getCreateTime(){
         return createTime;
     }

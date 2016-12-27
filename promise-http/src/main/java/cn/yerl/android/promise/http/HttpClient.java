@@ -11,13 +11,13 @@ import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
  * Http Client
  * Created by Alan Yeh on 2016/12/20.
  */
-
 class HttpClient extends AsyncHttpClient {
     public HttpClient(){
         super(true, 80, 443);
         setEnableRedirects(true, true, true);
     }
 
+    @SuppressWarnings("deprecation")
     RequestHandle sendRequest(HttpUriRequest uriRequest, ResponseHandlerInterface responseHandler){
         return sendRequest((DefaultHttpClient) getHttpClient(), getHttpContext(), uriRequest, null, responseHandler, null);
     }
