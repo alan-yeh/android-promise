@@ -3,6 +3,7 @@ package cn.yerl.android.promise.http;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,10 +24,12 @@ public class PromiseRequest implements Serializable {
     private Method method;
     private String urlString;
     private String encoding = "UTF-8";
+    final private Date createTime;
 
     private PromiseRequest(String url, Method method){
         this.urlString = url;
         this.method = method;
+        this.createTime = new Date();
     }
 
     public static PromiseRequest GET(String url){
@@ -83,18 +86,6 @@ public class PromiseRequest implements Serializable {
         return this;
     }
 
-    private Map<String, String> cookies = new LinkedHashMap<>();
-
-    public PromiseRequest withCookie(String key, String value){
-        this.cookies.put(key, value);
-        return this;
-    }
-
-    public PromiseRequest withCookies(Map<String, String> cookies){
-        this.cookies.putAll(cookies);
-        return this;
-    }
-
     public interface OnProgressChanged{
         void onProgress(long bytesWritten, long totalSize);
     }
@@ -124,6 +115,10 @@ public class PromiseRequest implements Serializable {
         return encoding;
     }
 
+    public Date getCreateTime(){
+        return createTime;
+    }
+
     public Map<String, String> getQueryParams() {
         return new HashMap<>(queryParams);
     }
@@ -136,8 +131,5 @@ public class PromiseRequest implements Serializable {
         return new HashMap<>(headers);
     }
 
-    public Map<String, String> getCookies() {
-        return new HashMap<>(cookies);
-    }
 
 }

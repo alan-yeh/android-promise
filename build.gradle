@@ -25,7 +25,7 @@ subprojects {
     buildscript {
         repositories {
             mavenCentral()
-            mavenLocal()
+//            mavenLocal()
         }
 
         dependencies {

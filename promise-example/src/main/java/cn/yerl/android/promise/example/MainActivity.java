@@ -1,9 +1,12 @@
 package cn.yerl.android.promise.example;
 
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
+
 
 import java.io.File;
 
@@ -11,6 +14,8 @@ import cn.yerl.android.promise.core.PromiseCallback;
 import cn.yerl.android.promise.http.PromiseHttp;
 import cn.yerl.android.promise.http.PromiseRequest;
 import cn.yerl.android.promise.http.PromiseResponse;
+import cn.yerl.android.promise.http.logger.FileLogger;
+import cn.yerl.android.promise.http.logger.LogcatLogger;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -20,10 +25,71 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         PromiseHttp.client().setBaseUrl("http://api.fir.im/api");
+        PromiseHttp.client().addSharedHeader("PRIVATE-TOKEN", "Y6ApBxtbYRuwFDGgGtDxa");
+        PromiseHttp.client().setLogger(new LogcatLogger(), new FileLogger(new File(Environment.getExternalStorageDirectory().toString() + File.separator + "promise-http")));
+//        PromiseHttp.client().setBaseUrl("http://ma.minstone.com.cn");
         PromiseHttp.client().setCachePath(MainActivity.this.getCacheDir());
     }
 
     public void onClick(View view){
+        PromiseRequest request = PromiseRequest.GET("http://codesync.cn/api/v3/groups");
+
+        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
+            @Override
+            public Object call(PromiseResponse arg) {
+                Toast.makeText(MainActivity.this, arg.getResponseString(), Toast.LENGTH_LONG).show();
+                return null;
+            }
+        }).error(new PromiseCallback<RuntimeException, Object>() {
+            @Override
+            public Object call(RuntimeException arg) {
+                Toast.makeText(MainActivity.this, arg.getMessage(), Toast.LENGTH_LONG).show();
+                return null;
+            }
+        });
+//        PromiseRequest request =PromiseRequest.POST("http://ma.minstone.com.cn/mobilework/login/login?aa=bb")
+//                .withQueryParam("j_username", "admin")
+//                .withQueryParam("j_password", "11");
+//        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
+//            @Override
+//            public Object call(PromiseResponse arg) {
+//                Toast.makeText(MainActivity.this, arg.getResponseString(), Toast.LENGTH_LONG).show();
+//                return null;
+//            }
+//        }).error(new PromiseCallback<RuntimeException, Object>() {
+//            @Override
+//            public Object call(RuntimeException arg) {
+////                arg.printStackTrace();
+//                Toast.makeText(MainActivity.this, arg.getMessage(), Toast.LENGTH_LONG).show();
+//                return null;
+//            }
+//        });
+
+//        PromiseRequest request = PromiseRequest.GET("http://192.168.0.185:9081/mobilework/login/login")
+//                .withQueryParam("j_username", "admin")
+//                .withQueryParam("j_password", "11");
+//
+//        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
+//            @Override
+//            public Object call(PromiseResponse arg) {
+//                Toast.makeText(MainActivity.this, arg.getResponseString(), Toast.LENGTH_LONG).show();
+//
+//                PromiseRequest request =PromiseRequest.GET("http://192.168.0.185:9081/OAMessage/api/summary");
+//                return PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
+//                    @Override
+//                    public Object call(PromiseResponse arg) {
+//                        Toast.makeText(MainActivity.this, arg.getResponseString(), Toast.LENGTH_LONG).show();
+//                        return null;
+//                    }
+//                });
+//            }
+//        }).error(new PromiseCallback<RuntimeException, Object>() {
+//            @Override
+//            public Object call(RuntimeException arg) {
+//                Toast.makeText(MainActivity.this, arg.getMessage(), Toast.LENGTH_LONG).show();
+//                return null;
+//            }
+//        });
         // GET Success
 //        PromiseRequest request = PromiseRequest.GET("/OATasks/andes/interface.json?test=abc").withQueryParam("hello", "haha").withQueryParam("bb", "bb");
 //        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
@@ -99,32 +165,34 @@ public class MainActivity extends AppCompatActivity {
 
         // Download
 //        PromiseRequest request = PromiseRequest.GET("https://raw.githubusercontent.com/alan-yeh/gradle-plugins/master/nexus-plugin/build.gradle");
+//
+//        request.addDownloadProgressListener(new PromiseRequest.OnProgressChanged() {
+//            @Override
+//            public void onProgress(long bytesWritten, long totalSize) {
+//                Log.d("【Download】", "bytesWritten: "+ bytesWritten + "  totalSize: " + totalSize);
+//            }
+//        });
+//
 //        PromiseHttp.client().download(request).then(new PromiseCallback<PromiseResponse, Object>() {
 //            @Override
 //            public Object call(PromiseResponse arg) {
 //                return null;
 //            }
 //        });
-//        request.setOnDownloadProgress(new PromiseRequest.OnProgress() {
-//            @Override
-//            public void onProgress(long bytesWritten, long totalSize) {
-//                Log.d("【Download】", "bytesWritten: "+ bytesWritten + "  totalSize: " + totalSize);
-//            }
-//        });
 
         // Upload
-        PromiseRequest request = PromiseRequest.POST("http://ma.minstone.com.cn/MDDisk/file").withBodyParam("file", new File(MainActivity.this.getCacheDir().getAbsolutePath() + File.separator + "build.gradle"));
-        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
-            @Override
-            public Object call(PromiseResponse arg) {
-                Toast.makeText(MainActivity.this, arg.getResponseString(), Toast.LENGTH_LONG).show();
-                return null;
-            }
-        }).error(new PromiseCallback<RuntimeException, Object>() {
-            @Override
-            public Object call(RuntimeException arg) {
-                return null;
-            }
-        });
+//        PromiseRequest request = PromiseRequest.POST("http://ma.minstone.com.cn/MDDisk/file").withBodyParam("file", new File(MainActivity.this.getCacheDir().getAbsolutePath() + File.separator + "build.gradle"));
+//        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
+//            @Override
+//            public Object call(PromiseResponse arg) {
+//                Toast.makeText(MainActivity.this, arg.getResponseString(), Toast.LENGTH_LONG).show();
+//                return null;
+//            }
+//        }).error(new PromiseCallback<RuntimeException, Object>() {
+//            @Override
+//            public Object call(RuntimeException arg) {
+//                return null;
+//            }
+//        });
     }
 }

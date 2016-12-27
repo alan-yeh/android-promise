@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Android Promise
- * Created by PSMac on 16/3/17.
+ * Created by Alan Yeh on 16/3/17.
  */
 public class Promise<R> {
     static final ExecutorService barrier = Executors.newSingleThreadExecutor();
@@ -551,10 +551,10 @@ public class Promise<R> {
      * @param always handle always
      * @return promise
      */
-    public <V> Promise<V> always(final PromiseCallback<R, V> always){
+    public <V> Promise<V> always(final PromiseCallback<Object, V> always){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
             @Override
-            public void call(final R arg, final PromiseResolver resolver) {
+            public void call(final Object arg, final PromiseResolver resolver) {
                 Promise.this.handler.post(new Runnable() {
                     @Override
                     public void run() {
@@ -574,10 +574,10 @@ public class Promise<R> {
      * @param always handle always
      * @return promise
      */
-    public <V> Promise<V> alwaysAsync(final PromiseCallback<R, V> always){
+    public <V> Promise<V> alwaysAsync(final PromiseCallback<Object, V> always){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
             @Override
-            public void call(final R arg, final PromiseResolver resolver) {
+            public void call(final Object arg, final PromiseResolver resolver) {
                 threadPool.execute(new Runnable() {
                     @Override
                     public void run() {

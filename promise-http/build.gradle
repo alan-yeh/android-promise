@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'android-config'
 
-version '1.0.0'
+version '1.0.4'
 
 android {
     compileSdkVersion project.ext["compileSdkVersion"]
@@ -54,8 +54,8 @@ nexus {
         groupId 'cn.yerl.android'
         artifactId 'promise-http'
 
-        name 'Android Promise Core'
-        description 'A promise implementation for Android'
+        name 'Android Promise Http'
+        description 'Android Async Http with Promise'
         url 'https://github.com/alan-yeh/android-promise'
 
         scm {

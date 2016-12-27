@@ -1,7 +1,8 @@
 package cn.yerl.android.promise.http;
 
 /**
- * Created by alan on 2016/12/12.
+ *
+ * Created by Alan Yeh on 2016/12/12.
  */
 
 public class PromiseHttpException extends RuntimeException {
