@@ -11,6 +11,7 @@ import com.loopj.android.http.TextHttpResponseHandler;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -29,6 +30,7 @@ import cz.msebera.android.httpclient.client.methods.HttpHead;
 import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.client.methods.HttpPut;
 import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
+import cz.msebera.android.httpclient.client.utils.URLEncodedUtils;
 
 /**
  * Promise Http Client
@@ -281,6 +283,12 @@ public class PromiseHttp {
 
         String suggestFileName = uri.getPath().substring(uri.getPath().lastIndexOf("/") + 1);
 
+        // URL Decode
+        try {
+            suggestFileName = URLDecoder.decode(suggestFileName, request.getEncoding());
+        }catch (Exception ex){}
+
+
         File cacheFile = new File(cachePath.getAbsolutePath() + File.separator + suggestFileName);
         if (cacheFile.exists()){
             cacheFile.delete();
@@ -305,6 +313,14 @@ public class PromiseHttp {
                         }
                     }
                 }
+
+                // URL Decode
+                if (!fileName.isEmpty()){
+                    try {
+                        fileName = URLDecoder.decode(fileName, request.getEncoding());
+                    }catch (Exception ex){}
+                }
+
                 File newFile = file;
                 try {
                     if (!fileName.isEmpty()) {

@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +31,9 @@ class ProcessUtils {
         try {
             URIBuilder uriBuilder = new URIBuilder(baseUrl);
 
-            URI requestURI = new URI(request.getUrlString());
+            String URLString = processPathParams(request.getUrlString(), request.getPathParams());
+
+            URI requestURI = new URI(URLString);
 
             if (requestURI.getHost() != null){
                 uriBuilder = new URIBuilder(request.getUrlString()).clearParameters();
@@ -55,6 +58,17 @@ class ProcessUtils {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String processPathParams(String URLString, Map<String, Object> pathParams){
+        if (URLString.indexOf('{') == -1){
+            return URLString;
+        }
+
+        for (Map.Entry<String, Object> entry : pathParams.entrySet()){
+            URLString = URLString.replaceAll("{" + entry.getKey() + "}", entry.getValue().toString());
+        }
+        return URLString;
     }
 
     /**

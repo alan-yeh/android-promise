@@ -110,6 +110,18 @@ public class PromiseRequest implements Serializable {
         return this;
     }
 
+    /**
+     * 移除URL参数
+     * @param keys 参数key
+     * @return PromiseRequest
+     */
+    public PromiseRequest removeQueryParam(String... keys){
+        for (String key : keys){
+            this.queryParams.remove(key);
+        }
+        return this;
+    }
+
     private Map<String, Object> bodyParams = new LinkedHashMap<>();
 
     /**
@@ -129,6 +141,53 @@ public class PromiseRequest implements Serializable {
      */
     public PromiseRequest withBodyParams(Map<String, Object> bodyParams){
         this.bodyParams.putAll(bodyParams);
+        return this;
+    }
+
+    /**
+     * 移除Body参数
+     * @param keys 参数key
+     * @return PromiseRequest
+     */
+    public PromiseRequest removeBodyParam(String... keys){
+        for (String key : keys){
+            this.bodyParams.remove(key);
+        }
+        return this;
+    }
+
+    private Map<String, Object> pathParams = new LinkedHashMap<>();
+
+    /**
+     * 添加Path参数, 使用{}进行占位
+     * @param key 参数名
+     * @param value 参数值
+     * @return PromiseRequest
+     */
+    public PromiseRequest withPathParam(String key, Object value){
+        this.pathParams.put(key, value);
+        return this;
+    }
+
+    /**
+     * 添加多个Path参数, 使用{}进行占位
+     * @param pathParams 参数键值对
+     * @return PromiseRequest
+     */
+    public PromiseRequest withPathParams(Map<String, Object> pathParams){
+        this.pathParams.putAll(pathParams);
+        return this;
+    }
+
+    /**
+     * 移除Path参数
+     * @param keys 参数key
+     * @return PromiseRequest
+     */
+    public PromiseRequest removePathParam(String... keys){
+        for (String key : keys){
+            this.pathParams.remove(key);
+        }
         return this;
     }
 
@@ -152,6 +211,18 @@ public class PromiseRequest implements Serializable {
      */
     public PromiseRequest withHeaders(Map<String, String> headers){
         this.headers.putAll(headers);
+        return this;
+    }
+
+    /**
+     * 移除Header
+     * @param keys 参数key
+     * @return PromiseRequest
+     */
+    public PromiseRequest removeHeaderParam(String... keys){
+        for (String key : keys){
+            this.headers.remove(key);
+        }
         return this;
     }
 
@@ -252,6 +323,10 @@ public class PromiseRequest implements Serializable {
      */
     public Map<String, Object> getBodyParams() {
         return new HashMap<>(bodyParams);
+    }
+
+    public Map<String, Object> getPathParams(){
+        return new HashMap<>(pathParams);
     }
 
     /**

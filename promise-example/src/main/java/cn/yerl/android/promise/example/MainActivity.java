@@ -25,28 +25,28 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         PromiseHttp.client().setBaseUrl("http://api.fir.im/api");
-        PromiseHttp.client().addSharedHeader("PRIVATE-TOKEN", "Y6ApBxtbYRuwFDGgGtDxa");
+        PromiseHttp.client().addSharedHeader("PRIVATE-TOKEN", "oK-19ifaqNhVbqAs5xwe");
         PromiseHttp.client().setLogger(new LogcatLogger(), new FileLogger(new File(Environment.getExternalStorageDirectory().toString() + File.separator + "promise-http")));
 //        PromiseHttp.client().setBaseUrl("http://ma.minstone.com.cn");
         PromiseHttp.client().setCachePath(MainActivity.this.getCacheDir());
     }
 
     public void onClick(View view){
-        PromiseRequest request = PromiseRequest.GET("http://codesync.cn/api/v3/groups");
-
-        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
-            @Override
-            public Object call(PromiseResponse arg) {
-                Toast.makeText(MainActivity.this, arg.getResponseString(), Toast.LENGTH_LONG).show();
-                return null;
-            }
-        }).error(new PromiseCallback<RuntimeException, Object>() {
-            @Override
-            public Object call(RuntimeException arg) {
-                Toast.makeText(MainActivity.this, arg.getMessage(), Toast.LENGTH_LONG).show();
-                return null;
-            }
-        });
+//        PromiseRequest request = PromiseRequest.GET("http://codesync.cn/api/v3/groups");
+//
+//        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
+//            @Override
+//            public Object call(PromiseResponse arg) {
+//                Toast.makeText(MainActivity.this, arg.getResponseString(), Toast.LENGTH_LONG).show();
+//                return null;
+//            }
+//        }).error(new PromiseCallback<RuntimeException, Object>() {
+//            @Override
+//            public Object call(RuntimeException arg) {
+//                Toast.makeText(MainActivity.this, arg.getMessage(), Toast.LENGTH_LONG).show();
+//                return null;
+//            }
+//        });
 //        PromiseRequest request =PromiseRequest.POST("http://ma.minstone.com.cn/mobilework/login/login?aa=bb")
 //                .withQueryParam("j_username", "admin")
 //                .withQueryParam("j_password", "11");
