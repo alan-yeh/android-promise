@@ -25,12 +25,13 @@ import cn.yerl.android.promise.core.PromiseResolver;
 import cn.yerl.android.promise.http.logger.ILogger;
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HeaderElement;
+import cz.msebera.android.httpclient.client.CookieStore;
 import cz.msebera.android.httpclient.client.methods.HttpEntityEnclosingRequestBase;
 import cz.msebera.android.httpclient.client.methods.HttpHead;
 import cz.msebera.android.httpclient.client.methods.HttpPost;
 import cz.msebera.android.httpclient.client.methods.HttpPut;
 import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
-import cz.msebera.android.httpclient.client.utils.URLEncodedUtils;
+import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
 
 /**
  * Promise Http Client
@@ -57,6 +58,14 @@ public class PromiseHttp {
 
     public String getBaseUrl() {
         return baseUrl;
+    }
+
+    /**
+     * 获取Cookies
+     * @return Cookies
+     */
+    public CookieStore getCookieStore(){
+        return ((DefaultHttpClient)this.httpClient.getHttpClient()).getCookieStore();
     }
 
     /**
@@ -249,6 +258,7 @@ public class PromiseHttp {
         Header[] headers = ProcessUtils.processHeader(sharedHeaders, request.getHeaders());
         req.setHeaders(headers);
 
+
         return httpClient.sendRequest(req, handler);
     }
 
@@ -256,7 +266,7 @@ public class PromiseHttp {
      * 非下载请求都用TextHttpResponseHandler来处理
      */
     private ResponseHandlerInterface getTextHandler(final PromiseRequest request, final PromiseResolver resolver){
-        return new TextHttpResponseHandler() {
+        TextHttpResponseHandler handler = new TextHttpResponseHandler() {
             @Override
             public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
                 resolver.resolve(new PromiseHttpException(new PromiseResponse(request, statusCode, headers, responseString), throwable));
@@ -267,6 +277,10 @@ public class PromiseHttp {
                 resolver.resolve(new PromiseResponse(request, statusCode, headers, responseString));
             }
         };
+
+        handler.setCharset(request.getEncoding());
+
+        return handler;
     }
 
     /*
@@ -294,7 +308,7 @@ public class PromiseHttp {
             cacheFile.delete();
         }
 
-        return new FileAsyncHttpResponseHandler(cacheFile) {
+        FileAsyncHttpResponseHandler handler = new FileAsyncHttpResponseHandler(cacheFile) {
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable throwable, File file) {
                 resolver.resolve(new PromiseHttpException(new PromiseResponse(request, statusCode, headers, file), throwable));
@@ -339,5 +353,7 @@ public class PromiseHttp {
                 request.onProgress(bytesWritten, totalSize);
             }
         };
+        handler.setCharset(request.getEncoding());
+        return handler;
     }
 }

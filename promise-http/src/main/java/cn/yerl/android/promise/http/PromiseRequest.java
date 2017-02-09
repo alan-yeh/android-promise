@@ -4,6 +4,7 @@ import com.loopj.android.http.RequestHandle;
 
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -297,6 +298,7 @@ public class PromiseRequest implements Serializable {
      * @return PromiseRequest
      */
     public PromiseRequest setEncoding(String encoding){
+        Charset.forName(encoding);
         this.encoding = encoding;
         return this;
     }

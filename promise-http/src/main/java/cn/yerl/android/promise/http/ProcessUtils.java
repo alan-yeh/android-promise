@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,6 +19,7 @@ import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.utils.URIBuilder;
 import cz.msebera.android.httpclient.client.utils.URLEncodedUtils;
 import cz.msebera.android.httpclient.message.BasicHeader;
+import cz.msebera.android.httpclient.message.BasicNameValuePair;
 
 /**
  * 请求处理工具
@@ -45,17 +47,25 @@ class ProcessUtils {
                 uriBuilder.setPath(uriBuilder.getPath() + "/" + requestURI.getPath());
             }
 
-            List<NameValuePair> queryParams = URLEncodedUtils.parse(requestURI.getQuery(), Charset.forName(request.getEncoding()));
-            for (NameValuePair pair : queryParams){
-                uriBuilder.setParameter(pair.getName(), pair.getValue());
-            }
+            URI result = uriBuilder.build();
+            String url = result.toString();
+
+
+            List<NameValuePair> queryParams = new ArrayList<>();
+
+            queryParams.addAll(URLEncodedUtils.parse(requestURI.getRawQuery(), Charset.forName(request.getEncoding())));
 
             for (Map.Entry<String, String> param : request.getQueryParams().entrySet()){
-                uriBuilder.setParameter(param.getKey(), param.getValue());
+                queryParams.add(new BasicNameValuePair(param.getKey(), param.getValue()));
             }
 
-            return uriBuilder.build();
-        } catch (URISyntaxException e) {
+            String encodedQuery = URLEncodedUtils.format(queryParams, Charset.forName(request.getEncoding()));
+            if (encodedQuery != null && encodedQuery.length() > 0){
+                url = url + "?" + encodedQuery;
+            }
+            return new URI(url);
+
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

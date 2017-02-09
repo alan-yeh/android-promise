@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 
 import java.io.File;
+import java.lang.annotation.Retention;
 
 import cn.yerl.android.promise.core.PromiseCallback;
 import cn.yerl.android.promise.http.PromiseHttp;
@@ -24,14 +25,48 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        PromiseHttp.client().setBaseUrl("http://api.fir.im/api");
+        PromiseHttp.client().setBaseUrl("http://192.168.9.235");
         PromiseHttp.client().addSharedHeader("PRIVATE-TOKEN", "oK-19ifaqNhVbqAs5xwe");
-        PromiseHttp.client().setLogger(new LogcatLogger(), new FileLogger(new File(Environment.getExternalStorageDirectory().toString() + File.separator + "promise-http")));
+        PromiseHttp.client().setLogger(new LogcatLogger());
 //        PromiseHttp.client().setBaseUrl("http://ma.minstone.com.cn");
         PromiseHttp.client().setCachePath(MainActivity.this.getCacheDir());
     }
 
     public void onClick(View view){
+        PromiseRequest request = PromiseRequest.GET("/mobilework/login/login")
+                .withQueryParam("j_username", "admin_xxcyj")
+                .withQueryParam("j_password", "11");
+
+        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, PromiseResponse>() {
+            @Override
+            public Object call(PromiseResponse arg) {
+                PromiseRequest request = PromiseRequest.GET("/PASystem/appMain?userName=%C4%AA")
+                        .withQueryParam("service", "com.minstone.pasystem.action.port.helper.PortCmd")
+                        .withQueryParam("func", "queryReleaseSchedule")
+                        .withQueryParam("pageNo", "")
+                        .withQueryParam("pageSize", "")
+                        .withQueryParam("startDate", "")
+                        .withQueryParam("endDate", "")
+//                        .withQueryParam("userName", "莫")
+                        .setEncoding("GBK");
+                return PromiseHttp.client().execute(request);
+            }
+        }).then(new PromiseCallback<PromiseResponse, Object>() {
+            @Override
+            public Object call(PromiseResponse arg) {
+                Log.d("response", arg.getResponseString());
+                return null;
+            }
+        }).error(new PromiseCallback<RuntimeException, Object>() {
+            @Override
+            public Object call(RuntimeException arg) {
+                arg.printStackTrace();
+                return null;
+            }
+        });
+//                .setEncoding("GBK");
+
+
 //        PromiseRequest request = PromiseRequest.GET("http://codesync.cn/api/v3/groups");
 //
 //        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, Object>() {
