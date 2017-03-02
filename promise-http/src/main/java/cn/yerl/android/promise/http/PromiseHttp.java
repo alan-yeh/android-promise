@@ -1,5 +1,7 @@
 package cn.yerl.android.promise.http;
 
+import android.util.Log;
+
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
 import com.loopj.android.http.HttpDelete;
 import com.loopj.android.http.HttpGet;
@@ -17,6 +19,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import cn.yerl.android.promise.core.Promise;
 import cn.yerl.android.promise.core.PromiseCallback;
@@ -302,6 +305,10 @@ public class PromiseHttp {
             suggestFileName = URLDecoder.decode(suggestFileName, request.getEncoding());
         }catch (Exception ex){}
 
+        if (suggestFileName.lastIndexOf(".") < 0){
+            suggestFileName = UUID.randomUUID().toString() + ".tmp";
+        }
+
 
         File cacheFile = new File(cachePath.getAbsolutePath() + File.separator + suggestFileName);
         if (cacheFile.exists()){
@@ -328,21 +335,21 @@ public class PromiseHttp {
                     }
                 }
 
-                // URL Decode
+                File newFile = file;
+
                 if (!fileName.isEmpty()){
                     try {
+                        //先转码
+                        fileName = new String(fileName.getBytes("ISO8859-1"), request.getEncoding());
+                        //再URL转码
                         fileName = URLDecoder.decode(fileName, request.getEncoding());
-                    }catch (Exception ex){}
-                }
-
-                File newFile = file;
-                try {
-                    if (!fileName.isEmpty()) {
+                        //再剪切
                         newFile = new File(file.getParent() + File.separator + fileName);
                         file.renameTo(newFile);
+
+                    }catch (Exception ex){
+                        throw new RuntimeException(ex);
                     }
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
                 }
 
                 resolver.resolve(new PromiseResponse(request, statusCode, headers, newFile));

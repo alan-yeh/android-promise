@@ -1,21 +1,14 @@
 package cn.yerl.android.promise.example;
 
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
-
-
-import java.io.File;
-import java.lang.annotation.Retention;
 
 import cn.yerl.android.promise.core.PromiseCallback;
 import cn.yerl.android.promise.http.PromiseHttp;
 import cn.yerl.android.promise.http.PromiseRequest;
 import cn.yerl.android.promise.http.PromiseResponse;
-import cn.yerl.android.promise.http.logger.FileLogger;
 import cn.yerl.android.promise.http.logger.LogcatLogger;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,8 +18,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        PromiseHttp.client().setBaseUrl("http://192.168.9.235");
-        PromiseHttp.client().addSharedHeader("PRIVATE-TOKEN", "oK-19ifaqNhVbqAs5xwe");
+        PromiseHttp.client().setBaseUrl("https://moa.liuzhou.gov.cn");
+//        PromiseHttp.client().addSharedHeader("PRIVATE-TOKEN", "oK-19ifaqNhVbqAs5xwe");
         PromiseHttp.client().setLogger(new LogcatLogger());
 //        PromiseHttp.client().setBaseUrl("http://ma.minstone.com.cn");
         PromiseHttp.client().setCachePath(MainActivity.this.getCacheDir());
@@ -34,22 +27,26 @@ public class MainActivity extends AppCompatActivity {
 
     public void onClick(View view){
         PromiseRequest request = PromiseRequest.GET("/mobilework/login/login")
-                .withQueryParam("j_username", "admin_xxcyj")
-                .withQueryParam("j_password", "11");
+                .withQueryParam("j_username", "18878911678")
+                .withQueryParam("j_password", "Lzz!1234");
 
         PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, PromiseResponse>() {
             @Override
             public Object call(PromiseResponse arg) {
-                PromiseRequest request = PromiseRequest.GET("/PASystem/appMain?userName=%C4%AA")
-                        .withQueryParam("service", "com.minstone.pasystem.action.port.helper.PortCmd")
-                        .withQueryParam("func", "queryReleaseSchedule")
-                        .withQueryParam("pageNo", "")
-                        .withQueryParam("pageSize", "")
-                        .withQueryParam("startDate", "")
-                        .withQueryParam("endDate", "")
-//                        .withQueryParam("userName", "莫")
-                        .setEncoding("GBK");
-                return PromiseHttp.client().execute(request);
+                PromiseRequest request = PromiseRequest.GET("/mobilework/s")
+                        .withQueryParam("service", "flowAttach")
+                        .withQueryParam("fileInid", "2014941353")
+                        .withQueryParam("fileName", "附件3政府公文处理笺.pdf")
+                        .withQueryParam("stepInco", "2019115675")
+                        .withQueryParam("flowInid", "2012948532")
+                        ;
+                request.addDownloadProgressListener(new PromiseRequest.OnProgressChanged() {
+                    @Override
+                    public void onProgress(long bytesWritten, long totalSize) {
+
+                    }
+                });
+                return PromiseHttp.client().download(request);
             }
         }).then(new PromiseCallback<PromiseResponse, Object>() {
             @Override
