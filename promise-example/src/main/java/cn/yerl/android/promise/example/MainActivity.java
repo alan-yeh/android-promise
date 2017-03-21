@@ -32,6 +32,27 @@ public class MainActivity extends AppCompatActivity {
         PromiseRequest request = PromiseRequest.GET("https://ssl.codesync.cn/mobilework/login/login")
             .withQueryParam("j_username", "admin")
             .withQueryParam("j_password", "11");
+
+        PromiseHttp.client().execute(request).then(response ->{
+            try {
+                JSONObject jsObj = new JSONObject(response.getResponseString());
+                if (jsObj.optBoolean("success")){
+                    return "登录成功";
+                }else {
+                    return new RuntimeException(jsObj.optString("message"));
+                }
+            } catch (JSONException e) {
+                return new RuntimeException("Json解析异常");
+            }
+        }).then(arg -> {
+            PromiseRequest authRequest = PromiseRequest.GET("https://ssl.codesync.cn/mobile-oa/api/authorize");
+            return PromiseHttp.client().execute(authRequest).then(PromiseResponse::getResponseString);
+        }).error(error ->{
+            error.printStackTrace();
+            return null;
+        });
+
+
         PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, String>() {
             @Override
             public Object call(PromiseResponse arg) {
@@ -65,6 +86,8 @@ public class MainActivity extends AppCompatActivity {
                 return null;
             }
         });
+
+
 //        PromiseRequest request = PromiseRequest.GET("/mobilework/login/login")
 //                .withQueryParam("j_username", "admin_xxcyj")
 //                .withQueryParam("j_password", "11");
