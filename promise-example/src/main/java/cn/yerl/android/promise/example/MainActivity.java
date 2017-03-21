@@ -1,21 +1,17 @@
 package cn.yerl.android.promise.example;
 
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
-import android.widget.Toast;
 
 
-import java.io.File;
-import java.lang.annotation.Retention;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import cn.yerl.android.promise.core.PromiseCallback;
 import cn.yerl.android.promise.http.PromiseHttp;
 import cn.yerl.android.promise.http.PromiseRequest;
 import cn.yerl.android.promise.http.PromiseResponse;
-import cn.yerl.android.promise.http.logger.FileLogger;
 import cn.yerl.android.promise.http.logger.LogcatLogger;
 
 public class MainActivity extends AppCompatActivity {
@@ -33,29 +29,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onClick(View view){
-        PromiseRequest request = PromiseRequest.GET("/mobilework/login/login")
-                .withQueryParam("j_username", "admin_xxcyj")
-                .withQueryParam("j_password", "11");
-
-        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, PromiseResponse>() {
+        PromiseRequest request = PromiseRequest.GET("https://ssl.codesync.cn/mobilework/login/login")
+            .withQueryParam("j_username", "admin")
+            .withQueryParam("j_password", "11");
+        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, String>() {
             @Override
             public Object call(PromiseResponse arg) {
-                PromiseRequest request = PromiseRequest.GET("/PASystem/appMain?userName=%C4%AA")
-                        .withQueryParam("service", "com.minstone.pasystem.action.port.helper.PortCmd")
-                        .withQueryParam("func", "queryReleaseSchedule")
-                        .withQueryParam("pageNo", "")
-                        .withQueryParam("pageSize", "")
-                        .withQueryParam("startDate", "")
-                        .withQueryParam("endDate", "")
-//                        .withQueryParam("userName", "莫")
-                        .setEncoding("GBK");
-                return PromiseHttp.client().execute(request);
+                try {
+                    JSONObject jsObj = new JSONObject(arg.getResponseString());
+                    if (jsObj.optBoolean("success")){
+                        return "登录成功";
+                    }else {
+                        return new RuntimeException(jsObj.optString("message"));
+                    }
+                } catch (JSONException e) {
+                    return new RuntimeException("Json解析异常");
+                }
             }
-        }).then(new PromiseCallback<PromiseResponse, Object>() {
+        }).then(new PromiseCallback<String, String>() {
             @Override
-            public Object call(PromiseResponse arg) {
-                Log.d("response", arg.getResponseString());
-                return null;
+            public Object call(String arg) {
+                PromiseRequest authRequest = PromiseRequest.GET("https://ssl.codesync.cn/mobile-oa/api/authorize");
+                return PromiseHttp.client().execute(authRequest).then(new PromiseCallback<PromiseResponse, Object>() {
+                    @Override
+                    public Object call(PromiseResponse arg) {
+                        String result = arg.getResponseString();
+                        return result;
+                    }
+                });
             }
         }).error(new PromiseCallback<RuntimeException, Object>() {
             @Override
@@ -64,6 +65,37 @@ public class MainActivity extends AppCompatActivity {
                 return null;
             }
         });
+//        PromiseRequest request = PromiseRequest.GET("/mobilework/login/login")
+//                .withQueryParam("j_username", "admin_xxcyj")
+//                .withQueryParam("j_password", "11");
+//
+//        PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, PromiseResponse>() {
+//            @Override
+//            public Object call(PromiseResponse arg) {
+//                PromiseRequest request = PromiseRequest.GET("/PASystem/appMain?userName=%C4%AA")
+//                        .withQueryParam("service", "com.minstone.pasystem.action.port.helper.PortCmd")
+//                        .withQueryParam("func", "queryReleaseSchedule")
+//                        .withQueryParam("pageNo", "")
+//                        .withQueryParam("pageSize", "")
+//                        .withQueryParam("startDate", "")
+//                        .withQueryParam("endDate", "")
+////                        .withQueryParam("userName", "莫")
+//                        .setEncoding("GBK");
+//                return PromiseHttp.client().execute(request);
+//            }
+//        }).then(new PromiseCallback<PromiseResponse, Object>() {
+//            @Override
+//            public Object call(PromiseResponse arg) {
+//                Log.d("response", arg.getResponseString());
+//                return null;
+//            }
+//        }).error(new PromiseCallback<RuntimeException, Object>() {
+//            @Override
+//            public Object call(RuntimeException arg) {
+//                arg.printStackTrace();
+//                return null;
+//            }
+//        });
 //                .setEncoding("GBK");
 
 

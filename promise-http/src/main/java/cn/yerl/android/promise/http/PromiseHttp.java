@@ -60,6 +60,27 @@ public class PromiseHttp {
         return baseUrl;
     }
 
+
+    public PromiseHttp setTimeout(int timeout){
+        this.httpClient.setTimeout(timeout);
+        return this;
+    }
+    public PromiseHttp setConnectTimeout(int timeout){
+        this.httpClient.setConnectTimeout(timeout);
+        return this;
+    }
+    public PromiseHttp setResponseTimeout(int timeout){
+        this.httpClient.setResponseTimeout(timeout);
+        return this;
+    }
+
+    public int getConnectTimeout(){
+        return this.httpClient.getConnectTimeout();
+    }
+    public int getResponseTimeout(){
+        return this.httpClient.getResponseTimeout();
+    }
+
     /**
      * 获取Cookies
      * @return Cookies
