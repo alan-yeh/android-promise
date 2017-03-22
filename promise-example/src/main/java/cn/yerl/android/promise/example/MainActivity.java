@@ -1,6 +1,6 @@
 package cn.yerl.android.promise.example;
 
-import android.support.v7.app.AppCompatActivity;
+import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 
@@ -14,7 +14,7 @@ import cn.yerl.android.promise.http.PromiseRequest;
 import cn.yerl.android.promise.http.PromiseResponse;
 import cn.yerl.android.promise.http.logger.LogcatLogger;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity {
             .withQueryParam("j_username", "admin")
             .withQueryParam("j_password", "11");
 
+
         PromiseHttp.client().execute(request).then(response ->{
             try {
                 JSONObject jsObj = new JSONObject(response.getResponseString());
@@ -44,13 +45,16 @@ public class MainActivity extends AppCompatActivity {
             } catch (JSONException e) {
                 return new RuntimeException("Json解析异常");
             }
-        }).then(arg -> {
+        }).then(() -> {
             PromiseRequest authRequest = PromiseRequest.GET("https://ssl.codesync.cn/mobile-oa/api/authorize");
             return PromiseHttp.client().execute(authRequest).then(PromiseResponse::getResponseString);
-        }).error(error ->{
-            error.printStackTrace();
-            return null;
+        }).always(() -> {
+            System.out.println("dismiss loading");
         });
+
+
+
+
 
 
         PromiseHttp.client().execute(request).then(new PromiseCallback<PromiseResponse, String>() {

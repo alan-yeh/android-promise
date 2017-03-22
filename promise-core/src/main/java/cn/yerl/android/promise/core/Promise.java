@@ -56,7 +56,7 @@ public class Promise<R> {
     /**
      * 未执行的Handler
      */
-    private List<PromiseResolver> handlers = new ArrayList<PromiseResolver>();
+    private List<PromiseResolver> handlers = new ArrayList<>();
 
     private static Handler handler = new Handler(Looper.getMainLooper());
 
@@ -77,7 +77,7 @@ public class Promise<R> {
         final PromiseResolver __presolver = new PromiseResolver() {
             @Override
             public void resolve(final Object result) {
-                final List<PromiseResolver> callbacks = new ArrayList<PromiseResolver>();
+                final List<PromiseResolver> callbacks = new ArrayList<>();
 
                 //保证执行链的顺序执行
                 final CountDownLatch signal = new CountDownLatch(1);
@@ -220,7 +220,7 @@ public class Promise<R> {
      * @return Promise
      */
     private <T, V> Promise<V> __pipe(final Promise<R> self, final PromiseCallbackWithResolver<R, V> then){
-        return new Promise<V>(new PromiseCallbackWithResolver<T, V>() {
+        return new Promise<>(new PromiseCallbackWithResolver<T, V>() {
             @Override
             public void call(T arg, final PromiseResolver resolver) {
                 self.pipe(new PromiseResolver() {
@@ -252,7 +252,7 @@ public class Promise<R> {
      * @return Promise
      */
     public static <T, V> Promise<V> resolve(final T result){
-        return new Promise<V>(new PromiseCallbackWithResolver<T, V>(){
+        return new Promise<>(new PromiseCallbackWithResolver<T, V>(){
             @Override
             public void call(T arg, PromiseResolver resolver) {
                 resolve(result);
@@ -268,7 +268,7 @@ public class Promise<R> {
      * @return Promise
      */
     public static <T, V> Promise<V> resolve(final RuntimeException ex){
-        return new Promise< V>(new PromiseCallbackWithResolver<T, V>(){
+        return new Promise<>(new PromiseCallbackWithResolver<T, V>(){
             @Override
             public void call(T arg, PromiseResolver resolver) {
                 resolve(ex);
@@ -288,8 +288,8 @@ public class Promise<R> {
      * @return Promise
      */
 
-    public static <T, V> Promise< List<V>> all(final List<Promise<V>> promises){
-        return new Promise<List<V>>(new PromiseCallbackWithResolver<T, List<V>>() {
+    public static <T, V> Promise<List<V>> all(final List<Promise<V>> promises){
+        return new Promise<>(new PromiseCallbackWithResolver<T, List<V>>() {
             @Override
             public void call(T arg, final PromiseResolver resolver) {
                 final AtomicInteger totalCount = new AtomicInteger(promises.size());
@@ -301,7 +301,7 @@ public class Promise<R> {
                             if (result instanceof RuntimeException){
                                 resolver.resolve(new RuntimeException("one of promise in promises was rejected" ,(RuntimeException)result));
                             }else if (totalCount.decrementAndGet() == 0){
-                                ArrayList<V> results = new ArrayList<V>(promises.size());
+                                ArrayList<V> results = new ArrayList<>(promises.size());
                                 for (Promise<V> promise : promises){
                                     results.add((V)promise.value);
                                 }
@@ -323,18 +323,18 @@ public class Promise<R> {
      * @param <V> 返回值类型
      * @return Promise
      */
-    public static <T, V> Promise<V> race(final List<Promise<V>> promises){
-        return new Promise<V>(new PromiseCallbackWithResolver<T, V>() {
+    public static <T, V> Promise<V> race(final List<Promise<V>> promises) {
+        return new Promise<>(new PromiseCallbackWithResolver<T, V>() {
             @Override
             public void call(T arg, final PromiseResolver resolver) {
                 final AtomicInteger totalCount = new AtomicInteger(promises.size());
-                for (Promise<V> promise : promises){
+                for (Promise<V> promise : promises) {
                     promise.pipe(new PromiseResolver() {
                         @Override
                         public void resolve(Object result) {
-                            if (!(result instanceof RuntimeException)){
+                            if (!(result instanceof RuntimeException)) {
                                 resolver.resolve(result);
-                            }else if (totalCount.decrementAndGet() == 0){
+                            } else if (totalCount.decrementAndGet() == 0) {
                                 resolver.resolve(new RuntimeException("all promise were rejected."));
                             }
                         }
@@ -362,6 +362,88 @@ public class Promise<R> {
                         public void run() {
                             try {
                                 resolver.resolve(then.call(arg));
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * 主线程执行
+     * @param then next step
+     */
+    public void then(final PromiseVoidReturnCallback<R> then){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    Promise.handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                then.call(arg);
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * 主线程执行
+     * @param then next step
+     */
+    public void then(final PromiseVoidArgVoidReturnCallback then){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    Promise.handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                then.call();
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * 主线程执行
+     * @param then next step
+     * @param <V> 返回值类型
+     * @return Promise
+     */
+    public <V> Promise<V> then(final PromiseVoidArgCallback<V> then){
+        return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    Promise.handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                resolver.resolve(then.call());
                             } catch (RuntimeException ex) {
                                 resolver.resolve(ex);
                             }
@@ -444,6 +526,88 @@ public class Promise<R> {
     }
 
     /**
+     * 异步执行
+     * @param then next step
+     * @param <V> 返回值类型
+     * @return Promise
+     */
+    public <V> Promise<V> thenAsync(final PromiseVoidArgCallback<V> then){
+        return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    threadPool.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                resolver.resolve(then.call());
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * 异步执行
+     * @param then next step
+     */
+    public void thenAsync(final PromiseVoidReturnCallback<R> then){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    threadPool.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                then.call(arg);
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * 异步执行
+     * @param then next step
+     */
+    public void thenAsync(final PromiseVoidArgVoidReturnCallback then){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    threadPool.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                then.call();
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
      * 异步执行,使用Resolver来回调
      * @param then next step
      * @param <V> 返回值类型
@@ -501,6 +665,91 @@ public class Promise<R> {
     }
 
     /**
+     * 延迟执行
+     * @param delayMillis 延迟时间，毫秒
+     * @param then 下一步
+     * @param <V> 返回值类型
+     * @return Promise
+     */
+    public <V> Promise<V> thenDelay(final long delayMillis, final PromiseVoidArgCallback<V> then){
+        return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    Promise.this.handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                resolver.resolve(then.call());
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    }, delayMillis);
+                }
+            }
+        });
+    }
+
+    /**
+     * 延迟执行
+     * @param delayMillis 延迟时间，毫秒
+     * @param then 下一步
+     */
+    public void thenDelay(final long delayMillis, final PromiseVoidReturnCallback<R> then){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    Promise.this.handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                then.call(arg);
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    }, delayMillis);
+                }
+            }
+        });
+    }
+
+    /**
+     * 延迟执行
+     * @param delayMillis 延迟时间，毫秒
+     * @param then 下一步
+     */
+    public void thenDelay(final long delayMillis, final PromiseVoidArgVoidReturnCallback then){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    resolver.resolve(arg);
+                }else {
+                    Promise.this.handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                then.call();
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    }, delayMillis);
+                }
+            }
+        });
+    }
+
+    /**
      * 延迟执行,使用Resolver回调
      * @param delayMillis delay time
      * @param then next step
@@ -511,7 +760,7 @@ public class Promise<R> {
 		return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
 			@Override
 			public void call(final R arg, final PromiseResolver resolver) {
-				if (arg instanceof  RuntimeException){
+				if (arg instanceof RuntimeException){
                     resolver.resolve(arg);
                 }else {
                     Promise.this.handler.postDelayed(new Runnable() {
@@ -536,7 +785,7 @@ public class Promise<R> {
      * @param <V> 返回值类型
      * @return Promise
      */
-    public <V > Promise<V> error(final PromiseCallback<RuntimeException, V> error){
+    public <V> Promise<V> error(final PromiseCallback<RuntimeException, V> error){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
             @Override
             public void call(final R arg, final PromiseResolver resolver) {
@@ -559,12 +808,94 @@ public class Promise<R> {
     }
 
     /**
+     * 同步处理错误
+     * @param error handle error
+     * @param <V> 返回值类型
+     * @return Promise
+     */
+    public <V> Promise<V> error(final PromiseVoidArgCallback<V> error){
+        return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    Promise.this.handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                resolver.resolve(error.call());
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }else {
+                    resolver.resolve(arg);
+                }
+            }
+        });
+    }
+
+    /**
+     * 同步处理错误
+     * @param error handle error
+     */
+    public void error(final PromiseVoidReturnCallback<RuntimeException> error){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    Promise.this.handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                error.call((RuntimeException) arg);
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }else {
+                    resolver.resolve(arg);
+                }
+            }
+        });
+    }
+
+    /**
+     * 同步处理错误
+     * @param error handle error
+     */
+    public void error(final PromiseVoidArgVoidReturnCallback error){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    Promise.this.handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                error.call();
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }else {
+                    resolver.resolve(arg);
+                }
+            }
+        });
+    }
+
+    /**
      * 异步处理错误
      * @param error handle error
      * @param <V> 返回值类型
      * @return Promise
      */
-    public <V > Promise<V> errorAsync(final PromiseCallback<RuntimeException, V> error){
+    public <V> Promise<V> errorAsync(final PromiseCallback<RuntimeException, V> error){
         return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
             @Override
             public void call(final R arg, final PromiseResolver resolver) {
@@ -574,6 +905,88 @@ public class Promise<R> {
                         public void run() {
                             try {
                                 resolver.resolve(error.call((RuntimeException) arg));
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }else {
+                    resolver.resolve(arg);
+                }
+            }
+        });
+    }
+
+    /**
+     * 异步处理错误
+     * @param error handle error
+     * @param <V> 返回值类型
+     * @return Promise
+     */
+    public <V> Promise<V> errorAsync(final PromiseVoidArgCallback<V> error){
+        return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    threadPool.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                resolver.resolve(error.call());
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }else {
+                    resolver.resolve(arg);
+                }
+            }
+        });
+    }
+
+    /**
+     * 异步处理错误
+     * @param error handle error
+     */
+    public void errorAsync(final PromiseVoidReturnCallback<RuntimeException> error){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    threadPool.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                error.call((RuntimeException) arg);
+                                resolver.resolve(null);
+                            } catch (RuntimeException ex) {
+                                resolver.resolve(ex);
+                            }
+                        }
+                    });
+                }else {
+                    resolver.resolve(arg);
+                }
+            }
+        });
+    }
+
+    /**
+     * 异步处理错误
+     * @param error handle error
+     */
+    public void errorAsync(final PromiseVoidArgVoidReturnCallback error){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                if (arg instanceof RuntimeException){
+                    threadPool.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                error.call();
+                                resolver.resolve(null);
                             } catch (RuntimeException ex) {
                                 resolver.resolve(ex);
                             }
@@ -611,6 +1024,76 @@ public class Promise<R> {
     }
 
     /**
+     * 主线程执行,正确或失败都会执行
+     * @param always handle always
+     * @param <V> 返回值类型
+     * @return Promise
+     */
+    public <V> Promise<V> always(final PromiseVoidArgCallback<V> always){
+        return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
+            @Override
+            public void call(final Object arg, final PromiseResolver resolver) {
+                Promise.this.handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            resolver.resolve(always.call());
+                        }catch (RuntimeException ex){
+                            resolver.resolve(ex);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 主线程执行,正确或失败都会执行
+     * @param always handle always
+     */
+    public void always(final PromiseVoidReturnCallback<Object> always){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                Promise.this.handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            always.call(arg);
+                            resolver.resolve(null);
+                        }catch (RuntimeException ex){
+                            resolver.resolve(ex);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 主线程执行,正确或失败都会执行
+     * @param always handle always
+     */
+    public void always(final PromiseVoidArgVoidReturnCallback always){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                Promise.this.handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            always.call();
+                            resolver.resolve(null);
+                        }catch (RuntimeException ex){
+                            resolver.resolve(ex);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
      * 异步执行,正确或失败都会执行
      * @param always handle always
      * @param <V> 返回值类型
@@ -625,6 +1108,76 @@ public class Promise<R> {
                     public void run() {
                         try {
                             resolver.resolve(always.call(arg));
+                        }catch (RuntimeException ex){
+                            resolver.resolve(ex);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 异步执行,正确或失败都会执行
+     * @param always handle always
+     * @param <V> 返回值类型
+     * @return Promise
+     */
+    public <V> Promise<V> alwaysAsync(final PromiseVoidArgCallback<V> always){
+        return __pipe(this, new PromiseCallbackWithResolver<R, V>() {
+            @Override
+            public void call(final Object arg, final PromiseResolver resolver) {
+                threadPool.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            resolver.resolve(always.call());
+                        }catch (RuntimeException ex){
+                            resolver.resolve(ex);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 异步执行,正确或失败都会执行
+     * @param always handle always
+     */
+    public void alwaysAsync(final PromiseVoidReturnCallback<Object> always){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                threadPool.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            always.call(arg);
+                            resolver.resolve(null);
+                        }catch (RuntimeException ex){
+                            resolver.resolve(ex);
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 异步执行,正确或失败都会执行
+     * @param always handle always
+     */
+    public void alwaysAsync(final PromiseVoidArgVoidReturnCallback always){
+        __pipe(this, new PromiseCallbackWithResolver<R, Object>() {
+            @Override
+            public void call(final R arg, final PromiseResolver resolver) {
+                threadPool.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            always.call();
+                            resolver.resolve(null);
                         }catch (RuntimeException ex){
                             resolver.resolve(ex);
                         }
