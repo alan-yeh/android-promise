@@ -36,7 +36,7 @@ public class PromiseRequest implements Serializable {
     final private Date createTime;
     RequestHandle handler;
 
-    private PromiseRequest(String url, Method method){
+    public PromiseRequest(String url, Method method){
         this.urlString = url;
         this.method = method;
         this.createTime = new Date();

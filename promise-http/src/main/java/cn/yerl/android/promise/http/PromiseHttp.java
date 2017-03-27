@@ -1,7 +1,5 @@
 package cn.yerl.android.promise.http;
 
-import android.util.Log;
-
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
 import com.loopj.android.http.HttpDelete;
 import com.loopj.android.http.HttpGet;
@@ -188,7 +186,7 @@ public class PromiseHttp {
             }
         }).alwaysAsync(new PromiseCallback<Object, PromiseResponse>() {
             @Override
-            public Object call(Object arg) {
+            public PromiseResponse call(Object arg) {
                 for (ILogger logger : loggers){
                     if (arg instanceof Throwable){
                         logger.log(PromiseHttp.this, request, (Throwable) arg);
@@ -196,7 +194,11 @@ public class PromiseHttp {
                         logger.log(PromiseHttp.this, (PromiseResponse) arg);
                     }
                 }
-                return arg;
+                if (arg instanceof Throwable){
+                    throw (RuntimeException)arg;
+                }else {
+                    return (PromiseResponse)arg;
+                }
             }
         });
     }
@@ -217,7 +219,7 @@ public class PromiseHttp {
             }
         }).alwaysAsync(new PromiseCallback<Object, PromiseResponse>() {
             @Override
-            public Object call(Object arg) {
+            public PromiseResponse call(Object arg) {
                 for (ILogger logger : loggers){
                     if (arg instanceof Throwable){
                         logger.log(PromiseHttp.this, request, (Throwable) arg);
@@ -225,7 +227,11 @@ public class PromiseHttp {
                         logger.log(PromiseHttp.this, (PromiseResponse) arg);
                     }
                 }
-                return arg;
+                if (arg instanceof Throwable){
+                    throw (RuntimeException)arg;
+                }else {
+                    return (PromiseResponse)arg;
+                }
             }
         });
     }
@@ -293,12 +299,12 @@ public class PromiseHttp {
         TextHttpResponseHandler handler = new TextHttpResponseHandler() {
             @Override
             public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                resolver.resolve(new PromiseHttpException(new PromiseResponse(request, statusCode, headers, responseString), throwable));
+                resolver.resolve(null, new PromiseHttpException(new PromiseResponse(request, statusCode, headers, responseString), throwable));
             }
 
             @Override
             public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                resolver.resolve(new PromiseResponse(request, statusCode, headers, responseString));
+                resolver.resolve(new PromiseResponse(request, statusCode, headers, responseString), null);
             }
         };
 
@@ -313,7 +319,7 @@ public class PromiseHttp {
      */
     private ResponseHandlerInterface getDownloadHandler(final PromiseRequest request, final PromiseResolver resolver){
         if (cachePath == null){
-            resolver.resolve(new UnsupportedOperationException("请先设置cachePath后再使用下载功能"));
+            resolver.resolve(null, new UnsupportedOperationException("请先设置cachePath后再使用下载功能"));
             return null;
         }
 
@@ -339,7 +345,7 @@ public class PromiseHttp {
         FileAsyncHttpResponseHandler handler = new FileAsyncHttpResponseHandler(cacheFile) {
             @Override
             public void onFailure(int statusCode, Header[] headers, Throwable throwable, File file) {
-                resolver.resolve(new PromiseHttpException(new PromiseResponse(request, statusCode, headers, file), throwable));
+                resolver.resolve(null, new PromiseHttpException(new PromiseResponse(request, statusCode, headers, file), throwable));
             }
 
             @Override
@@ -373,7 +379,7 @@ public class PromiseHttp {
                     }
                 }
 
-                resolver.resolve(new PromiseResponse(request, statusCode, headers, newFile));
+                resolver.resolve(new PromiseResponse(request, statusCode, headers, newFile), null);
             }
 
             @Override

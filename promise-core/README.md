@@ -154,16 +154,16 @@ doSomethingAsync(function(result, error){
     private Promise<String> get(final String url, final RequestParams params){
         return new Promise<String>(new PromiseCallbackWithResolver<Object, String>() {
             @Override
-            public void call(Object arg, final PromiseResolver resolver) {
+            public void call(Object arg, final PromiseResolver<String> resolver) {
                 new AsyncHttpClient().get(url, params, new TextHttpResponseHandler() {
                     @Override
                     public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                        resolver.resolve(new RuntimeException("网络访问错误", throwable));
+                        resolver.resolve(null, new RuntimeException("网络访问错误", throwable));
                     }
 
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                        resolver.resolve(responseString);
+                        resolver.resolve(responseString, null);
                     }
                 });
             }
@@ -174,49 +174,49 @@ doSomethingAsync(function(result, error){
     private Promise<JSONObject> parseJson(final String responseString){
         return new Promise<JSONObject>(new PromiseCallback<Object, JSONObject>() {
             @Override
-            public Object call(Object arg) {
+            public JSONObject call(Object arg) {
                 try {
                     return new JSONObject(responseString);
                 }catch (JSONException e){
-                    return new RuntimeException("Json解析出错", e);
+                    throw new RuntimeException("Json解析出错", e);
                 }
             }
         });
     }
 
-    public Promise<Contact> getContact(){
+    public Promise<List<Contact>> getContacts(){
         RequestParams params = new RequestParams();
         params.put("username", "username");
         params.put("password", "password");
         //登录
-        return get("xxxx/login", params).then(new PromiseCallback<String, JSONObject>() {
+        return get("xxxx/login", params).then(new PromiseCallbackWithResolver<String, JSONObject>() {
             @Override
-            public Object call(String arg) {
+            public void call(String arg, PromiseResolver<JSONObject> resolver) {
                 //转换Json
-                return parseJson(arg);
+                parseJson(arg).pipe(resolver);
             }
-        }).then(new PromiseCallback<JSONObject, String>() {
+        }).then(new PromiseCallbackWithResolver<JSONObject, String>() {
             @Override
-            public Object call(JSONObject arg) {
+            public void call(JSONObject arg, PromiseResolver<String> resolver) {
                 if (arg.optInt("status") == 200){
                     //登录成功
                     RequestParams params = new RequestParams();
                     params.put("pageIndex", 1);
                     params.put("pageSize", 20);
-                    return get("xxxx/contacts", params);
+                    get("xxxx/contacts", params).pipe(resolver);
                 }else {
-                    return new RuntimeException("登录失败");
+                    throw new RuntimeException("登录失败");
                 }
             }
-        }).then(new PromiseCallback<String, JSONObject>() {
+        }).then(new PromiseCallbackWithResolver<String, JSONObject>() {
             @Override
-            public Object call(String arg) {
+            public void call(String arg, PromiseResolver<JSONObject> resolver) {
                 //转换Json
-                return parseJson(arg);
+                parseJson(arg).pipe(resolver);
             }
-        }).then(new PromiseCallback<JSONObject, Contact>() {
+        }).then(new PromiseCallback<JSONObject, List<Contact>>() {
             @Override
-            public Object call(JSONObject arg) {
+            public List<Contact> call(JSONObject arg) {
                 if (arg.optInt("status") == 200){
                     List<Contact> contacts = new ArrayList<Contact>();
                     //处理业务
@@ -225,13 +225,50 @@ doSomethingAsync(function(result, error){
                     //....
                     return contacts;
                 }else {
-                    return new RuntimeException("数据获取失败");
+                    throw new RuntimeException("数据获取失败");
                 }
             }
         });
     }
 ```
 　　可以看到，使用Promise之后，网络访问、Json转换等做了一次封装，代码变得非常简洁，并且不会再发生层层嵌套的情况了，逻辑由原来的不断嵌套、跳转，变成现在的从上往下顺序执行，逻辑清晰了许多。
+
+　　如果使用了Java 8之后，以上的代码将会变得更加简洁。
+
+```java
+    public Promise<List<Contact>> getContacts(){
+        RequestParams params = new RequestParams();
+        params.put("username", "username");
+        params.put("password", "password");
+        //登录
+        return get("xxx/login", params).then((String arg, PromiseResolver<JSONObject> resolver) -> {
+            parseJson(arg).pipe(resolver);
+        }).then((JSONObject arg, PromiseResolver<String> resolver)->{
+            if (arg.optInt("status") == 200){
+                //登录成功
+                RequestParams contactParams = new RequestParams();
+                contactParams.put("pageIndex", 1);
+                contactParams.put("pageSize", 20);
+                get("xxxx/contacts", contactParams).pipe(resolver);
+            }else {
+                throw new RuntimeException("登录失败");
+            }
+        }).then((String arg, PromiseResolver<JSONObject> resolver) ->{
+            parseJson(arg).pipe(resolver);
+        }).then(arg ->{
+            if (arg.optInt("status") == 200){
+                List<Contact> contacts = new ArrayList<Contact>();
+                //处理业务
+                //组装实体
+                //....
+                //....
+                return contacts;
+            }else {
+                throw new RuntimeException("数据获取失败");
+            }
+        });
+    }
+```
 ## <a id="promise状态"></a>Promise状态
 　　每个Promise都只会被成功或失败一次，并且这个状态不会被改变。
 
@@ -248,14 +285,17 @@ doSomethingAsync(function(result, error){
 
 
 ## <a id="promise-api"></a>Promise Api
-　　Promise支持标准的CommonJS Promise/A语法。由于语言的特殊性，对其中部分Api进行小量改造。
 
 ### <a id="promisecallback"></a>`PromiseCallback`
 　　`PromiseCallback`是Promise主要核心Api之一，用于保存业务逻辑的代码。`PromiseCallback`接受一个返回值，它的方法签名如下：
 
 ```java
-public interface PromiseCallback<T, R> {
-    Object call(T arg);
+/*
+ * <A> 参数类型
+ * <R> 返回值类型
+ */
+public interface PromiseCallback<A, R> {
+    R call(A arg);
 }
 ```
 　　使用方法如以下代码所示：
@@ -263,39 +303,37 @@ public interface PromiseCallback<T, R> {
 ```java
 ({xxxxx}).then(new PromiseCallback<JSONObject, String>() {
             @Override
-            public Object call(JSONObject arg) {
+            public String call(JSONObject arg) {
                 if (arg.optInt("status") == 200){
-                    //登录成功
-                    RequestParams params = new RequestParams();
-                    params.put("pageIndex", 1);
-                    params.put("pageSize", 20);
-                    return get("xxxx/contacts", params);
+                    return "登录成功";
                 }else {
-                    return new RuntimeException("登录失败");
+                    throw new RuntimeException("登录失败");
                 }
             }
         })
 ```
-　　`PromiseCallback`接受以下返回值，不同返回值会导致Promise的不同行为：
+如果在PromiseCallback的call方法中，
 
-- 返回`RuntimeException`对象：代表将当前Promise的状态变更为Rejected状态，当前Promise之后的then不执行，直至error
-- 抛出`RuntimeException`对象：Promise将捕捉此对象，并将当前Promise的状态变更为Rejected状态，当前Promise之后的then不执行，直至error
-- 返回Promise对象，则将当前Promise对象链之后的Promise插管至新Promise对象执行链中。
-- 返回其它对象（包括null），当前Promise状态变更成Fulfiled。
+- 抛出`RuntimeException`，代表将当前Promise的状态变更为Rejected状态，当前Promise之后的then不执行，直至error
+- 返回对象（包括null），代表当前Promise状态变更成Fulfiled。
 
 ### <a id="promisecallbackwithresolver"></a>`PromiseCallbackWithResolver`
 　　`PromiseCallbackWithResolver`的作用与`PromiseCallback`的作用一致，用于保存未执行的代码块。但与`PromiseCallback`直接返回结果不同的是，`PromiseCallbackWithResolver`是不能直接返回结果的，而是要通过它的参数`PromiseResolver`返回结果，它的方法签名如下：
 
 ```java
-public interface PromiseCallbackWithResolver<T, R> {
-    void call(T arg, PromiseResolver resolver);
+/*
+ * <A> 参数类型
+ * <R> 返回值类型
+ */
+public interface PromiseCallbackWithResolver<A, R> {
+    void call(A arg, PromiseResolver<R> resolver);
 }
 ```
 　　而`PromiseResolver`的方法签名如下：
 
 ```java
-public interface PromiseResolver {
-    void resolve(Object result);
+public interface PromiseResolver<R> {
+    void resolve(R result, RuntimeException error);
 }
 ```
 　　`PromiseCallbackWithResolver`用于包装一些不能立即返回结果的代码块。例：
@@ -309,18 +347,25 @@ public interface PromiseResolver {
                 new AsyncHttpClient().get(url, params, new TextHttpResponseHandler() {
                     @Override
                     public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                        resolver.resolve(new RuntimeException("网络访问错误", throwable));
+                        resolver.resolve(null, new RuntimeException("网络访问错误", throwable));
                     }
 
                     @Override
                     public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                        resolver.resolve(responseString);
+                        resolver.resolve(responseString, null);
                     }
                 });
             }
         });
     }
 ```
+### 其它回调接口
+　　为了增加Java8的lambda的灵活性，和函数式编程的方便性，增加了以下三个接口。
+
+- `PromiseVoidArgCallback`: 没有参数的回调
+- `PromiseVoidArgVoidReturnCallback`: 没有参数且没有返回值的回调
+- `PromiseVoidReturnCallback`: 没有返回值的回调
+
 ### <a id="构造函数"></a>构造函数
 ```java
 //创建一个空的Promise

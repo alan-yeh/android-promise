@@ -5,5 +5,5 @@ package cn.yerl.android.promise.core;
  */
 
 public interface PromiseVoidArgCallback<R> {
-    Object call();
+    R call();
 }
