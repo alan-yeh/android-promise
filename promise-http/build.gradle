@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'android-config'
 
-version '1.2.0'
+version '1.2.3'
 
 android {
     compileSdkVersion project.ext["compileSdkVersion"]

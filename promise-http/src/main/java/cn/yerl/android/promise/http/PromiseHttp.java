@@ -14,6 +14,7 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import cn.yerl.android.promise.core.PromiseResolver;
 import cn.yerl.android.promise.http.logger.ILogger;
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HeaderElement;
+import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.client.CookieStore;
 import cz.msebera.android.httpclient.client.methods.HttpEntityEnclosingRequestBase;
 import cz.msebera.android.httpclient.client.methods.HttpHead;
@@ -170,6 +172,10 @@ public class PromiseHttp {
         return this;
     }
 
+    public Map<String, String> getSharedHeaders(){
+        return new HashMap<>(this.sharedHeaders);
+    }
+
     /**
      * 执行网络请求
      *
@@ -240,53 +246,9 @@ public class PromiseHttp {
      * 真正执行请求的地方
      */
     private RequestHandle _execute(final PromiseRequest request, final ResponseHandlerInterface handler){
-        // 处理URL，将QueryParam拼接在url后
-        URI requestURI = ProcessUtils.processURI(baseUrl, request);
 
-        // 处理参数
-        RequestParams params = ProcessUtils.processParams(request);
+        HttpUriRequest req = request.getRequest(this, handler);
 
-        HttpUriRequest req = null;
-
-        switch (request.getMethod()){
-            case GET:{
-                req = new HttpGet(requestURI);
-                break;
-            }
-            case DELETE:{
-                req = new HttpDelete(requestURI);
-                break;
-            }
-            case HEAD:{
-                req = new HttpHead(requestURI);
-                break;
-            }
-            case POST: {
-                HttpEntityEnclosingRequestBase requestBase = new HttpPost(requestURI);
-                req = requestBase;
-                try {
-                    requestBase.setEntity(params.getEntity(handler));
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-                break;
-            }
-            case PUT:{
-                HttpEntityEnclosingRequestBase requestBase = new HttpPut(requestURI);
-                req = requestBase;
-
-                try {
-                    requestBase.setEntity(params.getEntity(handler));
-                } catch (IOException ex) {
-                    throw new RuntimeException(ex);
-                }
-                break;
-            }
-        }
-
-        // 处理Header
-        Header[] headers = ProcessUtils.processHeader(sharedHeaders, request.getHeaders());
-        req.setHeaders(headers);
 
 
         return httpClient.sendRequest(req, handler);

@@ -50,7 +50,7 @@ abstract class BaseLogger implements ILogger {
         StringBuilder builder = new StringBuilder();
         String lineSeparator = System.getProperty("line.separator", "\n");
 
-        builder.append(lineSeparator)
+        builder.append(lineSeparator).append(lineSeparator)
                 .append("┏━━━━━ [ Promise Http Logger ] ━━━━━━━━━━━━━━━").append(lineSeparator)
                 .append("┣ Time: ").append(formatter.format(new Date())).append(lineSeparator)
                 .append("┣ URL: ").append(getRequestUrl(client.getBaseUrl(), response.getRequest().getUrlString())).append(lineSeparator)

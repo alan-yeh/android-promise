@@ -1,6 +1,9 @@
 package cn.yerl.android.promise.http;
 
 import com.loopj.android.http.RequestParams;
+import com.loopj.android.http.ResponseHandlerInterface;
+
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.InputStream;
@@ -11,13 +14,17 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import cz.msebera.android.httpclient.Header;
+import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.utils.URIBuilder;
 import cz.msebera.android.httpclient.client.utils.URLEncodedUtils;
+import cz.msebera.android.httpclient.entity.ContentType;
+import cz.msebera.android.httpclient.entity.StringEntity;
 import cz.msebera.android.httpclient.message.BasicHeader;
 import cz.msebera.android.httpclient.message.BasicNameValuePair;
 
@@ -101,25 +108,57 @@ class ProcessUtils {
     /**
      * 处理Body参数
      */
-    public static RequestParams processParams(PromiseRequest request){
-        RequestParams params = new RequestParams();
-        params.setContentEncoding(request.getEncoding());
+    public static HttpEntity processParams(PromiseRequest request, ResponseHandlerInterface handler){
+        int flag = 0;
+        if (request.getBodyParams().size() > 0){
+            flag ++;
+        }
+        if (request.getRawBody() != null && request.getRawBody().length() > 0){
+            flag ++;
+        }
+        if (request.getBinaryBody() != null){
+            flag ++;
+        }
+        if (flag > 1){
+            throw new IllegalArgumentException("PromiseRequest支持BodyParam、Raw、Binary三种之一，不能同时设置");
+        }
+
+
 
         try {
-            for (Map.Entry<String, Object> param : request.getBodyParams().entrySet()){
-                if (param.getValue() instanceof File){
-                    params.put(param.getKey(), (File)param.getValue());
-                }else if (param.getValue() instanceof File[]){
-                    params.put(param.getKey(), (File[])param.getValue());
-                }else if (param.getValue() instanceof InputStream){
-                    params.put(param.getKey(), (InputStream)param.getValue());
-                }else {
-                    params.put(param.getKey(), param.getValue());
+            if (request.getBodyParams().size() > 0){
+                RequestParams params = new RequestParams();
+                params.setContentEncoding(request.getEncoding());
+                for (Map.Entry<String, Object> param : request.getBodyParams().entrySet()){
+                    if (param.getValue() instanceof File){
+                        params.put(param.getKey(), (File)param.getValue());
+                    }else if (param.getValue() instanceof File[]){
+                        params.put(param.getKey(), (File[])param.getValue());
+                    }else if (param.getValue() instanceof InputStream){
+                        params.put(param.getKey(), (InputStream)param.getValue());
+                    }else if (param.getValue() instanceof String){
+                        params.put(param.getKey(), (String) param.getValue());
+                    }else{
+                        params.put(param.getKey(), param.getValue());
+                    }
                 }
+
+                return params.getEntity(handler);
             }
+
+            if (request.getRawBody() != null && request.getRawBody().length() > 0){
+                StringEntity entity = new StringEntity(request.getRawBody() , ContentType.TEXT_PLAIN);
+                entity.setContentEncoding(request.getEncoding());
+                return entity;
+            }
+
+            if (request.getBinaryBody() != null){
+                RequestParams params = new RequestParams();
+            }
+
+            return null;
         }catch (Exception ex){
             throw new RuntimeException(ex);
         }
-        return params;
     }
 }
