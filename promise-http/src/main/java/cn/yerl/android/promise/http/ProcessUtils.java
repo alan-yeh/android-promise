@@ -147,11 +147,12 @@ class ProcessUtils {
             }
 
             if (request.getRawBody() != null && request.getRawBody().length() > 0){
-                StringEntity entity = new StringEntity(request.getRawBody() , ContentType.TEXT_PLAIN);
+                StringEntity entity = new StringEntity(request.getRawBody() , request.getEncoding());
                 entity.setContentEncoding(request.getEncoding());
                 return entity;
             }
 
+            // 未处理
             if (request.getBinaryBody() != null){
                 RequestParams params = new RequestParams();
             }

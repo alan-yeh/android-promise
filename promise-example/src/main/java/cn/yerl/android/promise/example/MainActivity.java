@@ -46,85 +46,91 @@ public class MainActivity extends Activity {
     }
 
     public void onClick(View view) throws Exception{
-        File file = new File(MainActivity.this.getCacheDir(), "aaa.txt");
 
-        if (!file.exists()){
-            String content = "test content";
-            FileWriter writer = new FileWriter(file);
-            writer.write(content);
-            writer.close();
-        }
-
-
-        JSONObject loginArg = new JSONObject();
-        loginArg.put("name", "admin");
-        loginArg.put("password", "123qwe");
-
-        PromiseRequest request = PromiseRequest.POST("/auth/api/nameLogin")
-                .withRawBody(loginArg.toString());
-
-        // ======================= 登录
-        PromiseHttp.client().execute(request).then((PromiseResponse arg, PromiseResolver<PromiseResponse> resolver) ->{
-            try {
-                JSONObject token = new JSONObject(arg.getResponseString());
-
-                // ======================= 申请上传
-                JSONObject uploadArgs = new JSONObject();
-                uploadArgs.put("token", token.optString("token"));
-                uploadArgs.put("parent", 0);
-                uploadArgs.put("name", file.getName());
-                uploadArgs.put("size", file.length());
-                uploadArgs.put("overWrite", true);
-
-                PromiseRequest requestUpload = PromiseRequest.POST("/fs/api/requestUpload")
-                        .withRawBody(uploadArgs.toString());
-
-                PromiseHttp.client().execute(requestUpload).then((PromiseResponse response, PromiseResolver<PromiseResponse> _resolver) -> {
-                    try{
-                        JSONObject data = new JSONObject(response.getResponseString());
-                        if (data.optString("stat").equals("OK")){
-
-                            // ======== 上传文件
-                            PromiseRequest fileUpload = PromiseRequest.POST(data.optJSONArray("nodes").getJSONObject(0).optString("addr") + "/formUpload")
-                                    .withQueryParam("fileUploadId", data.optString("fileUploadId"))
-                                    .withBodyParam("size", file.length())
-                                    .withBodyParam("name", file.getName())
-                                    .withBodyParam("file", file);
-
-                            PromiseHttp.client().execute(fileUpload).then((PromiseResponse resp) ->{
-                                try{
-                                    JSONObject info = new JSONObject(resp.getResponseString());
-
-                                    // ========== 完成上传
-                                    JSONObject commitArg = new JSONObject();
-                                    commitArg.put("token", token.optString("token"));
-                                    commitArg.put("fileUploadId", data.optString("fileUploadId"));
-                                    commitArg.put("partCommitIds", info.optJSONArray("partCommitIds"));
-                                    commitArg.put("parent", 0);
-                                    commitArg.put("name", file.getName());
-                                    commitArg.put("size", file.length());
-
-                                    PromiseHttp.client().execute(PromiseRequest.POST("/fs/api/commitUpload").withRawBody(commitArg.toString())).pipe(_resolver);
-
-                                }catch (Exception ex){
-                                    throw new RuntimeException(ex);
-                                }
-                            });
-                        }
-                    }catch (Exception ex){
-                        throw new RuntimeException(ex);
-                    }
-                }).pipe(resolver);
-
-            }catch (Exception ex){
-                throw new RuntimeException(ex);
+        PromiseRequest request = PromiseRequest.GET("http://archives.codesync.cn/archives/api/releases/download/300a8878-6a3c-4b98-a194-69e639a43568");
+        request.addDownloadProgressListener(new PromiseRequest.OnProgressChanged() {
+            @Override
+            public void onProgress(long bytesWritten, long totalSize) {
+                Log.d("download", "bytesWritten:" + bytesWritten + ", totalSize: " + totalSize);
             }
-        }).then((PromiseResponse response)->{
-            Toast.makeText(MainActivity.this, response.getResponseString(), Toast.LENGTH_LONG).show();
-            return null;
-        }).error(error ->{
-            Toast.makeText(MainActivity.this, error.getLocalizedMessage(), Toast.LENGTH_LONG).show();
         });
+        PromiseHttp.client().download(request).then(response -> {
+            System.out.println(response.getResponseFile().getName());
+            return null;
+        }).error(error -> {
+            error.printStackTrace();
+        });
+//
+//
+//        JSONObject loginArg = new JSONObject();
+//        loginArg.put("name", "admin");
+//        loginArg.put("password", "123qwe");
+//
+//        PromiseRequest request = PromiseRequest.POST("/auth/api/nameLogin")
+//                .withRawBody(loginArg.toString());
+//
+//        // ======================= 登录
+//        PromiseHttp.client().execute(request).then((PromiseResponse arg, PromiseResolver<PromiseResponse> resolver) ->{
+//            try {
+//                JSONObject token = new JSONObject(arg.getResponseString());
+//
+//                // ======================= 申请上传
+//                JSONObject uploadArgs = new JSONObject();
+//                uploadArgs.put("token", token.optString("token"));
+//                uploadArgs.put("parent", 0);
+//                uploadArgs.put("name", file.getName());
+//                uploadArgs.put("size", file.length());
+//                uploadArgs.put("overWrite", true);
+//
+//                PromiseRequest requestUpload = PromiseRequest.POST("/fs/api/requestUpload")
+//                        .withRawBody(uploadArgs.toString());
+//
+//                PromiseHttp.client().execute(requestUpload).then((PromiseResponse response, PromiseResolver<PromiseResponse> _resolver) -> {
+//                    try{
+//                        JSONObject data = new JSONObject(response.getResponseString());
+//                        if (data.optString("stat").equals("OK")){
+//
+//                            // ======== 上传文件
+//                            PromiseRequest fileUpload = PromiseRequest.POST(data.optJSONArray("nodes").getJSONObject(0).optString("addr") + "/formUpload")
+//                                    .withQueryParam("fileUploadId", data.optString("fileUploadId"))
+//                                    .withBodyParam("size", file.length())
+//                                    .withBodyParam("name", file.getName())
+//                                    .withBodyParam("file", file);
+//
+//                            PromiseHttp.client().execute(fileUpload).then((PromiseResponse resp) ->{
+//                                try{
+//                                    JSONObject info = new JSONObject(resp.getResponseString());
+//
+//                                    // ========== 完成上传
+//                                    JSONObject commitArg = new JSONObject();
+//                                    commitArg.put("token", token.optString("token"));
+//                                    commitArg.put("fileUploadId", data.optString("fileUploadId"));
+//                                    commitArg.put("partCommitIds", info.optJSONArray("partCommitIds"));
+//                                    commitArg.put("parent", 0);
+//                                    commitArg.put("name", file.getName());
+//                                    commitArg.put("size", file.length());
+//
+//                                    PromiseHttp.client().execute(PromiseRequest.POST("/fs/api/commitUpload").withRawBody(commitArg.toString())).pipe(_resolver);
+//
+//                                }catch (Exception ex){
+//                                    throw new RuntimeException(ex);
+//                                }
+//                            });
+//                        }
+//                    }catch (Exception ex){
+//                        throw new RuntimeException(ex);
+//                    }
+//                }).pipe(resolver);
+//
+//            }catch (Exception ex){
+//                throw new RuntimeException(ex);
+//            }
+//        }).then((PromiseResponse response)->{
+//            Toast.makeText(MainActivity.this, response.getResponseString(), Toast.LENGTH_LONG).show();
+//            return null;
+//        }).error(error ->{
+//            Toast.makeText(MainActivity.this, error.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+//        });
 
 //        PromiseRequest request = PromiseRequest.GET("https://ssl.codesync.cn/mobilework/login/login")
 //            .withQueryParam("j_username", "admin")
@@ -385,6 +391,37 @@ public class MainActivity extends Activity {
 //            public Object call(PromiseResponse arg) {
 //                return null;
 //            }
+//        });
+
+//        File file = new File(MainActivity.this.getCacheDir(), "测试文件.txt");
+//
+//        if (!file.exists()){
+//            String content = "测试的文件内容";
+//            FileWriter writer = new FileWriter(file);
+//            writer.write(content);
+//            writer.close();
+//        }
+//
+//        PromiseRequest loginReq = PromiseRequest.GET("http://192.168.0.208:8888/mobilework/login/login")
+//                .withQueryParam("j_username", "test")
+//                .withQueryParam("j_password", "11");
+//
+//        PromiseHttp.client().execute(loginReq).then((PromiseResponse response, PromiseResolver<PromiseResponse> resolver) ->{
+//            PromiseRequest uploadReq = PromiseRequest.POST("http://192.168.0.208:8888/ConferenceManagementSystem/appMain?service=com.minstone.cms.action.port.helper.PortCmd&func=meetingFileDataUpload")
+//                    .withBodyParam("meetingId", "123456")
+//                    .withBodyParam("attach", file);
+////            uploadReq.setEncoding("GBK");
+//
+//            PromiseHttp.client().execute(uploadReq).pipe(resolver);
+//        }).then((PromiseResponse resp, PromiseResolver<PromiseResponse> resolver) ->{
+//            PromiseRequest request = PromiseRequest.GET("http://192.168.0.208:8888/ConferenceManagementSystem/appMain?service=com.minstone.cms.action.port.helper.PortCmd&func=accessoryList")
+//                    .withQueryParam("meetingId", "123465");
+//            PromiseHttp.client().execute(request).pipe(resolver);
+//        }).then(resp ->{
+//            Toast.makeText(MainActivity.this, resp.getResponseString(), Toast.LENGTH_LONG).show();
+//            return null;
+//        }).error(error ->{
+//            Toast.makeText(MainActivity.this, error.getLocalizedMessage(), Toast.LENGTH_LONG).show();
 //        });
 
         // Upload

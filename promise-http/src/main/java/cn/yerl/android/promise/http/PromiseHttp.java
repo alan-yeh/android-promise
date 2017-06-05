@@ -28,6 +28,7 @@ import cn.yerl.android.promise.http.logger.ILogger;
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HeaderElement;
 import cz.msebera.android.httpclient.HttpEntity;
+import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.CookieStore;
 import cz.msebera.android.httpclient.client.methods.HttpEntityEnclosingRequestBase;
 import cz.msebera.android.httpclient.client.methods.HttpHead;
@@ -249,8 +250,6 @@ public class PromiseHttp {
 
         HttpUriRequest req = request.getRequest(this, handler);
 
-
-
         return httpClient.sendRequest(req, handler);
     }
 
@@ -317,8 +316,9 @@ public class PromiseHttp {
                     if ("Content-Disposition".equalsIgnoreCase(header.getName())) {
                         HeaderElement[] elements = header.getElements();
                         for (HeaderElement element : elements) {
-                            if ("attachment".equalsIgnoreCase(element.getName())) {
-                                fileName = element.getParameterByName("filename").getValue();
+                            NameValuePair attachName = element.getParameterByName("filename");
+                            if (attachName != null){
+                                fileName = attachName.getValue();
                             }
                         }
                     }
@@ -330,8 +330,6 @@ public class PromiseHttp {
                     try {
                         //先转码
                         fileName = new String(fileName.getBytes("ISO8859-1"), request.getEncoding());
-                        //再URL转码
-                        fileName = URLDecoder.decode(fileName, request.getEncoding());
                         //再剪切
                         newFile = new File(file.getParent() + File.separator + fileName);
                         file.renameTo(newFile);
