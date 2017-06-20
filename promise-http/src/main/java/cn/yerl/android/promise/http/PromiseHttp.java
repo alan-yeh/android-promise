@@ -330,10 +330,12 @@ public class PromiseHttp {
                     try {
                         //先转码
                         fileName = new String(fileName.getBytes("ISO8859-1"), request.getEncoding());
-                        //再剪切
+                        //再重命名
                         newFile = new File(file.getParent() + File.separator + fileName);
-                        file.renameTo(newFile);
-
+                        if (file.renameTo(newFile)){
+                            // 重命名失败了，还是用回原来的名字
+                            newFile = file;
+                        }
                     }catch (Exception ex){
                         throw new RuntimeException(ex);
                     }
