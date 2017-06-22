@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import cn.yerl.android.promise.http.PromiseHttp;
+import cn.yerl.android.promise.http.PromiseHttpException;
 import cn.yerl.android.promise.http.PromiseRequest;
 import cn.yerl.android.promise.http.PromiseResponse;
 import cz.msebera.android.httpclient.client.utils.URIBuilder;
@@ -46,7 +47,7 @@ abstract class BaseLogger implements ILogger {
     }
 
     @Override
-    public void log(PromiseHttp client, PromiseResponse response) {
+    public void info(PromiseHttp client, PromiseResponse response) {
         StringBuilder builder = new StringBuilder();
         String lineSeparator = System.getProperty("line.separator", "\n");
 
@@ -65,12 +66,12 @@ abstract class BaseLogger implements ILogger {
                 .append("┣ Response Content: ").append(response.getResponseString() == null ? "File: " + response.getResponseFile().toString() : response.getResponseString()).append(lineSeparator)
                 .append("┗━━━━━ [ Promise Http Logger ] ━━━━━━━━━━━━━━━").append(lineSeparator);
 
-        writeContent(builder.toString(), false);
+        writeInfo(builder.toString());
     }
 
 
     @Override
-    public void log(PromiseHttp client, PromiseRequest request, Throwable throwable) {
+    public void error(PromiseHttp client, PromiseRequest request, Throwable throwable) {
         StringBuilder builder = new StringBuilder();
         String lineSeparator = System.getProperty("line.separator", "\n");
 
@@ -86,12 +87,21 @@ abstract class BaseLogger implements ILogger {
                 .append("┣ Method: ").append(request.getMethod().toString()).append(lineSeparator)
                 .append("┣ QueryParams: ").append(request.getQueryParams().toString()).append(lineSeparator)
                 .append("┣ BodyParams: ").append(request.getBodyParams().toString()).append(lineSeparator)
-                .append("┣ Request Header: ").append(request.getHeaders().toString()).append(lineSeparator)
-                .append("┣ Exception: ").append(lineSeparator).append(" ").append(writer.toString())
+                .append("┣ Request Header: ").append(request.getHeaders().toString()).append(lineSeparator);
+
+        if (throwable instanceof PromiseHttpException){
+            PromiseHttpException httpException = (PromiseHttpException) throwable;
+            builder.append("┣ Response Content: ").append(httpException.getResponse().getResponseString()).append(lineSeparator);
+        }
+
+        builder.append("┣ Exception: ").append(lineSeparator).append(" ").append(writer.toString())
                 .append("┗━━━━━ [ Promise Http Logger ] ━━━━━━━━━━━━━━━").append(lineSeparator);
 
-        writeContent(builder.toString(), true);
+        writeError(builder.toString());
     }
 
-    abstract void writeContent(String content, boolean isThrowable);
+//    abstract void writeInfo(String content, boolean isThrowable);
+
+    abstract void writeInfo(String info);
+    abstract void writeError(String error);
 }

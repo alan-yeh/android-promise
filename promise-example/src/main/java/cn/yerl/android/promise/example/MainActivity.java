@@ -47,19 +47,30 @@ public class MainActivity extends Activity {
 
     public void onClick(View view) throws Exception{
 
-        PromiseRequest request = PromiseRequest.GET("http://archives.codesync.cn/archives/api/releases/download/300a8878-6a3c-4b98-a194-69e639a43568");
-        request.addDownloadProgressListener(new PromiseRequest.OnProgressChanged() {
+        PromiseRequest loginReq = PromiseRequest.GET("https://ssl.codesync.cn/mobilework/login/login?j_username=admin&j_password=11");
+
+        PromiseHttp.client().execute(loginReq).then(new PromiseCallback<PromiseResponse, Object>() {
             @Override
-            public void onProgress(long bytesWritten, long totalSize) {
-                Log.d("download", "bytesWritten:" + bytesWritten + ", totalSize: " + totalSize);
+            public Object call(PromiseResponse arg) {
+                PromiseRequest request = PromiseRequest.GET("https://ssl.codesync.cn/mobilework/s?fileInid=2014815681&fileName=%E6%B5%8B%E8%AF%95%E9%99%84%E4%BB%B6%E4%B8%8B%E8%BD%BD.doc&stepInco=2018720162&service=flowAttach&flowInid=2012771234");
+                request.addDownloadProgressListener(new PromiseRequest.OnProgressChanged() {
+                    @Override
+                    public void onProgress(long bytesWritten, long totalSize) {
+                        Log.d("download", "bytesWritten:" + bytesWritten + ", totalSize: " + totalSize);
+                    }
+                });
+                PromiseHttp.client().download(request).then(response -> {
+                    System.out.println(response.getResponseFile().getName());
+                    return null;
+                }).error(error -> {
+                    error.printStackTrace();
+                });
+
+                return null;
             }
         });
-        PromiseHttp.client().download(request).then(response -> {
-            System.out.println(response.getResponseFile().getName());
-            return null;
-        }).error(error -> {
-            error.printStackTrace();
-        });
+
+
 //
 //
 //        JSONObject loginArg = new JSONObject();

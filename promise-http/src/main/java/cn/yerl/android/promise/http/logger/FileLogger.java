@@ -29,7 +29,16 @@ public class FileLogger extends BaseLogger {
     }
 
     @Override
-    void writeContent(String content, boolean isThrowable){
+    void writeInfo(String info) {
+        writeString(info);
+    }
+
+    @Override
+    void writeError(String error) {
+        writeString(error);
+    }
+
+    void writeString(String content){
         Date date = new Date();
         String folderName = logFolderFormatter.format(date);
         File folder = new File(logPath.getPath() + File.separator + folderName);
@@ -38,7 +47,7 @@ public class FileLogger extends BaseLogger {
         }
 
         try{
-            RandomAccessFile randomAccessFile = new RandomAccessFile(new File(folder.getPath() + File.separator + logFilenameFormatter.format(date) + ".log"), "rw");
+            RandomAccessFile randomAccessFile = new RandomAccessFile(new File(folder.getPath() + File.separator + logFilenameFormatter.format(date) + ".info"), "rw");
             randomAccessFile.seek(randomAccessFile.length());
             randomAccessFile.write(content.getBytes("UTF-8"));
             randomAccessFile.close();

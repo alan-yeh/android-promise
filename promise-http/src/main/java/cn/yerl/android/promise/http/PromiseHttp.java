@@ -1,15 +1,11 @@
 package cn.yerl.android.promise.http;
 
 import com.loopj.android.http.FileAsyncHttpResponseHandler;
-import com.loopj.android.http.HttpDelete;
-import com.loopj.android.http.HttpGet;
 import com.loopj.android.http.RequestHandle;
-import com.loopj.android.http.RequestParams;
 import com.loopj.android.http.ResponseHandlerInterface;
 import com.loopj.android.http.TextHttpResponseHandler;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -27,13 +23,8 @@ import cn.yerl.android.promise.core.PromiseResolver;
 import cn.yerl.android.promise.http.logger.ILogger;
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.HeaderElement;
-import cz.msebera.android.httpclient.HttpEntity;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.CookieStore;
-import cz.msebera.android.httpclient.client.methods.HttpEntityEnclosingRequestBase;
-import cz.msebera.android.httpclient.client.methods.HttpHead;
-import cz.msebera.android.httpclient.client.methods.HttpPost;
-import cz.msebera.android.httpclient.client.methods.HttpPut;
 import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
 import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
 
@@ -196,9 +187,9 @@ public class PromiseHttp {
             public PromiseResponse call(Object arg) {
                 for (ILogger logger : loggers){
                     if (arg instanceof Throwable){
-                        logger.log(PromiseHttp.this, request, (Throwable) arg);
+                        logger.error(PromiseHttp.this, request, (Throwable) arg);
                     }else {
-                        logger.log(PromiseHttp.this, (PromiseResponse) arg);
+                        logger.info(PromiseHttp.this, (PromiseResponse) arg);
                     }
                 }
                 if (arg instanceof Throwable){
@@ -229,9 +220,9 @@ public class PromiseHttp {
             public PromiseResponse call(Object arg) {
                 for (ILogger logger : loggers){
                     if (arg instanceof Throwable){
-                        logger.log(PromiseHttp.this, request, (Throwable) arg);
+                        logger.error(PromiseHttp.this, request, (Throwable) arg);
                     }else {
-                        logger.log(PromiseHttp.this, (PromiseResponse) arg);
+                        logger.info(PromiseHttp.this, (PromiseResponse) arg);
                     }
                 }
                 if (arg instanceof Throwable){
@@ -331,8 +322,8 @@ public class PromiseHttp {
                         //先转码
                         fileName = new String(fileName.getBytes("ISO8859-1"), request.getEncoding());
                         //再重命名
-                        newFile = new File(file.getParent() + File.separator + fileName);
-                        if (file.renameTo(newFile)){
+                        newFile = new File(file.getParent(), fileName);
+                        if (!file.renameTo(newFile)){
                             // 重命名失败了，还是用回原来的名字
                             newFile = file;
                         }

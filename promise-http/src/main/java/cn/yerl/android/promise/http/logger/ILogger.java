@@ -14,7 +14,7 @@ public interface ILogger {
      * @param client HttpClient
      * @param response Http Response
      */
-    void log(PromiseHttp client, PromiseResponse response);
+    void info(PromiseHttp client, PromiseResponse response);
 
     /**
      * 记录异常
@@ -22,5 +22,5 @@ public interface ILogger {
      * @param request Http Request
      * @param throwable 异常
      */
-    void log(PromiseHttp client, PromiseRequest request, Throwable throwable);
+    void error(PromiseHttp client, PromiseRequest request, Throwable throwable);
 }
