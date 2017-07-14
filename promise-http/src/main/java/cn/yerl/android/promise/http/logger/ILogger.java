@@ -17,6 +17,13 @@ public interface ILogger {
     void info(PromiseHttp client, PromiseResponse response);
 
     /**
+     * 记录字符串信息
+     * @param client
+     * @param info
+     */
+    void info(PromiseHttp client, String info);
+
+    /**
      * 记录异常
      * @param client HttpClient
      * @param request Http Request

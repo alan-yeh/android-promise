@@ -41,13 +41,13 @@ public class FileLogger extends BaseLogger {
     void writeString(String content){
         Date date = new Date();
         String folderName = logFolderFormatter.format(date);
-        File folder = new File(logPath.getPath() + File.separator + folderName);
+        File folder = new File(logPath.getPath(), folderName);
         if (! folder.exists()){
             folder.mkdirs();
         }
 
         try{
-            RandomAccessFile randomAccessFile = new RandomAccessFile(new File(folder.getPath() + File.separator + logFilenameFormatter.format(date) + ".info"), "rw");
+            RandomAccessFile randomAccessFile = new RandomAccessFile(new File(folder.getPath(), logFilenameFormatter.format(date) + ".log"), "rw");
             randomAccessFile.seek(randomAccessFile.length());
             randomAccessFile.write(content.getBytes("UTF-8"));
             randomAccessFile.close();

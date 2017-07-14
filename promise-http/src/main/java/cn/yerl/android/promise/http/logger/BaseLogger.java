@@ -18,7 +18,7 @@ import cz.msebera.android.httpclient.client.utils.URIBuilder;
  */
 abstract class BaseLogger implements ILogger {
 
-    private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-mm-dd HH:mm:ss");
+    private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-mm-dd HH:mm:ss.SSS");
 
     private String getRequestUrl(String baseUrl, String requestUrl){
         try {
@@ -60,7 +60,7 @@ abstract class BaseLogger implements ILogger {
                 .append("┣ BodyParams: ").append(response.getRequest().getBodyParams().toString()).append(lineSeparator)
                 .append("┣ Request Header: ").append(response.getRequest().getHeaders().toString()).append(lineSeparator)
 
-                .append("┣ Execute Time: ").append(response.getCreateTime().getTime() - response.getRequest().getCreateTime().getTime()).append(lineSeparator)
+                .append("┣ Execute Time: ").append(response.getCreateTime().getTime() - response.getRequest().getCreateTime().getTime()).append("ms").append(lineSeparator)
                 .append("┣ Response Status: ").append(response.getStatusCode()).append(lineSeparator)
                 .append("┣ Response Header: ").append(response.getHeaders().toString()).append(lineSeparator)
                 .append("┣ Response Content: ").append(response.getResponseString() == null ? "File: " + response.getResponseFile().toString() : response.getResponseString()).append(lineSeparator)
@@ -69,6 +69,19 @@ abstract class BaseLogger implements ILogger {
         writeInfo(builder.toString());
     }
 
+    @Override
+    public void info(PromiseHttp client, String info) {
+        StringBuilder builder = new StringBuilder();
+        String lineSeparator = System.getProperty("line.separator", "\n");
+
+        builder.append(lineSeparator).append(lineSeparator)
+                .append("┏━━━━━ [ Promise Http Logger ] ━━━━━━━━━━━━━━━").append(lineSeparator)
+                .append("┣ Time: ").append(formatter.format(new Date())).append(lineSeparator)
+                .append("┣ INFO: ").append(info).append(lineSeparator)
+                .append("┗━━━━━ [ Promise Http Logger ] ━━━━━━━━━━━━━━━").append(lineSeparator);
+
+        writeInfo(builder.toString());
+    }
 
     @Override
     public void error(PromiseHttp client, PromiseRequest request, Throwable throwable) {

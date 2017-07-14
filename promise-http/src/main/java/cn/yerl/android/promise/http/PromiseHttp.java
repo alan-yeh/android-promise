@@ -13,6 +13,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -26,6 +27,7 @@ import cz.msebera.android.httpclient.HeaderElement;
 import cz.msebera.android.httpclient.NameValuePair;
 import cz.msebera.android.httpclient.client.CookieStore;
 import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
+import cz.msebera.android.httpclient.client.protocol.ClientContext;
 import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
 
 /**
@@ -76,12 +78,23 @@ public class PromiseHttp {
         return this.httpClient.getResponseTimeout();
     }
 
+
     /**
      * 获取Cookies
      * @return Cookies
      */
     public CookieStore getCookieStore(){
         return ((DefaultHttpClient)this.httpClient.getHttpClient()).getCookieStore();
+    }
+
+    public PromiseHttp setCookieStore(CookieStore cookieStore){
+        this.httpClient.setCookieStore(cookieStore);
+        return this;
+    }
+
+    public void clearCookies(){
+        ((CookieStore)this.httpClient.getHttpContext().getAttribute(ClientContext.COOKIE_STORE)).clear();
+        ((DefaultHttpClient)this.httpClient.getHttpClient()).getCookieStore().clear();
     }
 
     /**
@@ -117,6 +130,8 @@ public class PromiseHttp {
 
     private PromiseHttp(){
         httpClient = new HttpClient();
+        httpClient.addHeader("Connection", "Keep-Alive");
+        httpClient.addHeader("Accept-Language", Locale.getDefault().toString());
     }
 
     private static PromiseHttp instance;
@@ -275,6 +290,14 @@ public class PromiseHttp {
             return null;
         }
 
+        if (!cachePath.exists()){
+            if (!cachePath.mkdir()){
+                resolver.resolve(null, new IllegalStateException("无法创建下载缓存目录"));
+                return null;
+            }
+        }
+
+
         URI uri = ProcessUtils.processURI(baseUrl, request);
 
         String suggestFileName = uri.getPath().substring(uri.getPath().lastIndexOf("/") + 1);
@@ -289,7 +312,7 @@ public class PromiseHttp {
         }
 
 
-        File cacheFile = new File(cachePath.getAbsolutePath() + File.separator + suggestFileName);
+        File cacheFile = new File(cachePath.getAbsolutePath(), suggestFileName);
         if (cacheFile.exists()){
             cacheFile.delete();
         }
