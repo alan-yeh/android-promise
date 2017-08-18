@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'android-config'
 
-version '1.2.17'
+version '2.0.5'
 
 android {
     compileSdkVersion 26
@@ -32,7 +32,7 @@ android {
 
 dependencies {
     compile project(":promise-core")
-    compile group: 'com.loopj.android', name: 'android-async-http', version: '1.4.9'
+    compile 'com.lzy.net:okgo:3.0.3'
 }
 
 
@@ -40,14 +40,16 @@ apply plugin: 'nexus'
 
 nexus {
     repository {
-        username project.ext["nexus.username"]
-        password project.ext["nexus.password"]
+        username "admin"
+        password "minstone@123"
+        release 'http://nexus.codesync.cn/content/repositories/md/'
+        snapshot 'http://nexus.codesync.cn/content/repositories/md/'
     }
 
-    signatory {
-        keyId project.ext["signatory.keyId"]
-        password project.ext["signatory.password"]
-    }
+//    signatory {
+//        keyId project.ext["signatory.keyId"]
+//        password project.ext["signatory.password"]
+//    }
 
     pom {
         groupId 'cn.yerl.android'
@@ -78,3 +80,44 @@ nexus {
         }
     }
 }
+
+//nexus {
+//    repository {
+//        username project.ext["nexus.username"]
+//        password project.ext["nexus.password"]
+//    }
+//
+//    signatory {
+//        keyId project.ext["signatory.keyId"]
+//        password project.ext["signatory.password"]
+//    }
+//
+//    pom {
+//        groupId 'cn.yerl.android'
+//        artifactId 'promise-http'
+//
+//        name 'Android Promise Http'
+//        description 'Android Async Http with Promise'
+//        url 'https://github.com/alan-yeh/android-promise'
+//
+//        scm {
+//            url 'https://github.com/alan-yeh/android-promise'
+//            connection 'scm:https://github.com/alan-yeh/android-promise.git'
+//            developerConnection 'scm:git@github.com:alan-yeh/android-promise.git'
+//        }
+//
+//        licenses {
+//            license {
+//                name 'The Apache Software License, Version 2.0'
+//                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+//            }
+//        }
+//
+//        developers {
+//            developer {
+//                name 'Alan Yeh'
+//                email 'alan@yerl.cn'
+//            }
+//        }
+//    }
+//}

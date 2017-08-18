@@ -6,7 +6,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import cz.msebera.android.httpclient.Header;
+import okhttp3.Headers;
 
 /**
  * 封装服务器返回的内容
@@ -20,27 +20,27 @@ public class PromiseResponse implements Serializable {
     private File responseFile;
     final private Date createTime;
 
-    PromiseResponse(PromiseRequest request, int statusCode, Header[] headers, String responseString){
+    PromiseResponse(PromiseRequest request, int statusCode, Headers headers, String responseString){
         this.request = request;
         this.statusCode = statusCode;
         this.responseString = responseString;
         this.headers = new HashMap<>();
         this.createTime = new Date();
         if (headers != null){
-            for (Header header : headers){
-                this.headers.put(header.getName(), header.getValue());
+            for (String name : headers.names()){
+                this.headers.put(name, headers.get(name));
             }
         }
     }
-    PromiseResponse(PromiseRequest request, int statusCode, Header[] headers, File responseFile){
+    PromiseResponse(PromiseRequest request, int statusCode, Headers headers, File responseFile){
         this.request = request;
         this.statusCode = statusCode;
         this.responseFile = responseFile;
         this.headers = new HashMap<>();
         this.createTime = new Date();
         if (headers != null){
-            for (Header header : headers){
-                this.headers.put(header.getName(), header.getValue());
+            for (String name : headers.names()){
+                this.headers.put(name, headers.get(name));
             }
         }
     }

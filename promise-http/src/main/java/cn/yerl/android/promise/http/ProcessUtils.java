@@ -1,32 +1,20 @@
 package cn.yerl.android.promise.http;
 
-import com.loopj.android.http.RequestParams;
-import com.loopj.android.http.ResponseHandlerInterface;
+import android.net.Uri;
 
-import org.json.JSONObject;
+import com.lzy.okgo.model.HttpParams;
+import com.lzy.okgo.request.base.BodyRequest;
 
 import java.io.File;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
-import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.HttpEntity;
-import cz.msebera.android.httpclient.NameValuePair;
-import cz.msebera.android.httpclient.client.utils.URIBuilder;
-import cz.msebera.android.httpclient.client.utils.URLEncodedUtils;
-import cz.msebera.android.httpclient.entity.ContentType;
-import cz.msebera.android.httpclient.entity.StringEntity;
-import cz.msebera.android.httpclient.message.BasicHeader;
-import cz.msebera.android.httpclient.message.BasicNameValuePair;
+import okhttp3.FormBody;
+import okhttp3.HttpUrl;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+
 
 /**
  * 请求处理工具
@@ -36,43 +24,62 @@ class ProcessUtils {
     /**
      * 处理baseUrl和request的UrlString关系
      */
-    public static URI processURI(String baseUrl, PromiseRequest request){
+    static String processURI(String baseUrl, PromiseRequest request){
         try {
-            URIBuilder uriBuilder = new URIBuilder(baseUrl);
+            HttpUrl.Builder builder = new HttpUrl.Builder();
 
-            String URLString = processPathParams(request.getUrlString(), request.getPathParams());
+            HttpUrl httpUrl = HttpUrl.parse(request.getUrlString());
 
-            URI requestURI = new URI(URLString);
-
-            if (requestURI.getHost() != null){
-                uriBuilder = new URIBuilder(request.getUrlString()).clearParameters();
+            // 非标准URL，可能是/xxxx/xxx或 xxxx/xxx形式，转成标准形式的
+            if (httpUrl == null){
+                if (request.getUrlString().startsWith("/")){
+                    httpUrl = HttpUrl.parse("http://xxx.xx" + request.getUrlString());
+                }else {
+                    httpUrl = HttpUrl.parse("http://xxx.xx/" + request.getUrlString());
+                }
             }
 
-            if (requestURI.getPath().startsWith("/")){
-                uriBuilder.setPath(requestURI.getPath());
+            if (!"xxx.xx".equals(httpUrl.host())){
+                // request url里面有host之类的信息，说明是完整的URL
+                builder.host(httpUrl.host());
+                builder.scheme(httpUrl.scheme());
+                builder.port(httpUrl.port());
+                builder.encodedPath(httpUrl.encodedPath());
+                builder.query(httpUrl.query());
             }else {
-                uriBuilder.setPath(uriBuilder.getPath() + "/" + requestURI.getPath());
+                // 设置成baseUrl地址
+                if (baseUrl == null || baseUrl.isEmpty()){
+                    throw new IllegalArgumentException("无法访问指定的URL，请检查URL格式是否正确");
+                }
+                HttpUrl baseHttpUrl = HttpUrl.parse(baseUrl);
+
+                builder.host(baseHttpUrl.host());
+                builder.scheme(baseHttpUrl.scheme());
+                builder.port(baseHttpUrl.port());
+
+                // 处理相对路径
+                if (!request.getUrlString().startsWith("/")){
+                    builder.encodedPath(baseHttpUrl.encodedPath());
+                }
+
+                for (String path : httpUrl.encodedPathSegments()){
+                    builder.addEncodedPathSegment(path);
+                }
+
+                builder.query(httpUrl.query());
             }
 
-            URI result = uriBuilder.build();
-            String url = result.toString();
 
-
-            List<NameValuePair> queryParams = new ArrayList<>();
-
-            queryParams.addAll(URLEncodedUtils.parse(requestURI.getRawQuery(), Charset.forName(request.getEncoding())));
-
-            for (Map.Entry<String, String> param : request.getQueryParams().entrySet()){
-                queryParams.add(new BasicNameValuePair(param.getKey(), param.getValue()));
+            for (Map.Entry<String, String> query: request.getQueryParams().entrySet()){
+                builder.addEncodedQueryParameter(URLEncoder.encode(query.getKey(), request.getEncoding()), query.getValue() == null ? "" : URLEncoder.encode(query.getValue(), request.getEncoding()));
             }
 
-            String encodedQuery = URLEncodedUtils.format(queryParams, Charset.forName(request.getEncoding()));
-            if (encodedQuery != null && encodedQuery.length() > 0){
-                url = url + "?" + encodedQuery;
-            }
-            return new URI(url);
-
-        } catch (Exception e) {
+            return builder.build().toString();
+        }
+        catch (RuntimeException e){
+            throw e;
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -89,26 +96,9 @@ class ProcessUtils {
     }
 
     /**
-     * 将shareHeader和requestHeader处理成Header[]
-     */
-    public static Header[] processHeader(Map<String, String> sharedHeaders, Map<String, String> requestHeaders){
-        List<Header> result = new ArrayList<>();
-
-        Map<String, String> headers = new HashMap<>();
-        headers.putAll(sharedHeaders);
-        headers.putAll(requestHeaders);
-
-        for (Map.Entry<String, String> header : headers.entrySet()){
-            result.add(new BasicHeader(header.getKey(), header.getValue()));
-        }
-
-        return result.toArray(new Header[result.size()]);
-    }
-
-    /**
      * 处理Body参数
      */
-    public static HttpEntity processParams(PromiseRequest request, ResponseHandlerInterface handler){
+    static void processBody(PromiseRequest request, BodyRequest httpRequest){
         int flag = 0;
         if (request.getBodyParams().size() > 0){
             flag ++;
@@ -123,43 +113,67 @@ class ProcessUtils {
             throw new IllegalArgumentException("PromiseRequest支持BodyParam、Raw、Binary三种之一，不能同时设置");
         }
 
-
-
         try {
             if (request.getBodyParams().size() > 0){
-                RequestParams params = new RequestParams();
-                params.setContentEncoding(request.getEncoding());
-                for (Map.Entry<String, Object> param : request.getBodyParams().entrySet()){
-                    if (param.getValue() instanceof File){
-                        params.put(param.getKey(), (File)param.getValue());
-                    }else if (param.getValue() instanceof File[]){
-                        params.put(param.getKey(), (File[])param.getValue());
-                    }else if (param.getValue() instanceof InputStream){
-                        params.put(param.getKey(), (InputStream)param.getValue());
-                    }else if (param.getValue() instanceof String){
-                        params.put(param.getKey(), (String) param.getValue());
-                    }else{
-                        params.put(param.getKey(), param.getValue());
+                if (isMultipartRequest(request)){
+                    // 上传文件用multipart
+                    MultipartBody.Builder bodyBuilder = new MultipartBody.Builder();
+                    for (Map.Entry<String, Object> param : request.getBodyParams().entrySet()){
+                        if (param.getValue() == null){
+                            bodyBuilder.addFormDataPart(param.getKey(), "");
+                        }else if (param.getValue() instanceof File){
+                            File file = (File)param.getValue();
+                            bodyBuilder.addFormDataPart(param.getKey(), file.getName(), RequestBody.create(MediaType.parse("application/octet-stream"), file));
+                        }else if (param.getValue() instanceof String){
+                            bodyBuilder.addFormDataPart(param.getKey(), (String) param.getValue());
+                        }else if (param.getValue() instanceof Integer || param.getValue() instanceof Double || param.getValue() instanceof Boolean || param.getValue() instanceof Character || param.getValue() instanceof Float || param.getValue() instanceof Long){
+                            bodyBuilder.addFormDataPart(param.getKey(), param.getValue().toString());
+                        }else {
+                            throw new IllegalArgumentException("不支持的参数类型" + param.getValue().getClass().getName() + ", 请联系开发者");
+                        }
                     }
+
+                    httpRequest.upRequestBody(bodyBuilder.build());
+                }else {
+                    // 参数用Form
+                    FormBody.Builder bodyBuilder = new FormBody.Builder();
+                    for (Map.Entry<String, Object> param : request.getBodyParams().entrySet()){
+                        if (param.getValue() == null){
+                            bodyBuilder.addEncoded(URLEncoder.encode(param.getKey()), "");
+                        }else if (param.getValue() instanceof String){
+                            bodyBuilder.addEncoded(URLEncoder.encode(param.getKey(), request.getEncoding()), URLEncoder.encode((String) param.getValue(), request.getEncoding()));
+                        }else if (param.getValue() instanceof Integer || param.getValue() instanceof Double || param.getValue() instanceof Boolean || param.getValue() instanceof Character || param.getValue() instanceof Float || param.getValue() instanceof Long){
+                            bodyBuilder.addEncoded(URLEncoder.encode(param.getKey(), request.getEncoding()), param.getValue().toString());
+                        }else {
+                            throw new IllegalArgumentException("不支持的参数类型" + param.getValue().getClass().getName() + ", 请联系开发者");
+                        }
+                    }
+
+                    httpRequest.upRequestBody(bodyBuilder.build());
                 }
-
-                return params.getEntity(handler);
             }
 
+            // JSON
             if (request.getRawBody() != null && request.getRawBody().length() > 0){
-                StringEntity entity = new StringEntity(request.getRawBody() , request.getEncoding());
-                entity.setContentEncoding(request.getEncoding());
-                return entity;
+                httpRequest.upString(request.getRawBody());
             }
 
-            // 未处理
+            //TODO: Check
             if (request.getBinaryBody() != null){
-                RequestParams params = new RequestParams();
+                httpRequest.upFile(request.getBinaryBody());
             }
-
-            return null;
         }catch (Exception ex){
             throw new RuntimeException(ex);
         }
     }
+
+    private static boolean isMultipartRequest(PromiseRequest request){
+        for (Object value : request.getBodyParams().values()){
+            if (value instanceof File){
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

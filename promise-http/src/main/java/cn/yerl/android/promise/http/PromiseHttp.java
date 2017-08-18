@@ -1,34 +1,37 @@
 package cn.yerl.android.promise.http;
 
-import com.loopj.android.http.FileAsyncHttpResponseHandler;
-import com.loopj.android.http.RequestHandle;
-import com.loopj.android.http.ResponseHandlerInterface;
-import com.loopj.android.http.TextHttpResponseHandler;
+import android.app.Application;
+
+import com.lzy.okgo.OkGo;
+import com.lzy.okgo.cache.CacheMode;
+import com.lzy.okgo.callback.Callback;
+import com.lzy.okgo.callback.FileCallback;
+import com.lzy.okgo.callback.StringCallback;
+import com.lzy.okgo.cookie.CookieJarImpl;
+import com.lzy.okgo.cookie.store.CookieStore;
+import com.lzy.okgo.cookie.store.MemoryCookieStore;
+import com.lzy.okgo.cookie.store.SPCookieStore;
+import com.lzy.okgo.https.HttpsUtils;
+import com.lzy.okgo.model.Progress;
+import com.lzy.okgo.model.Response;
+import com.lzy.okgo.request.base.Request;
 
 import java.io.File;
-import java.net.URI;
-import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.UUID;
 
 import cn.yerl.android.promise.core.Promise;
 import cn.yerl.android.promise.core.PromiseCallback;
 import cn.yerl.android.promise.core.PromiseCallbackWithResolver;
 import cn.yerl.android.promise.core.PromiseResolver;
 import cn.yerl.android.promise.http.logger.ILogger;
-import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.HeaderElement;
-import cz.msebera.android.httpclient.NameValuePair;
-import cz.msebera.android.httpclient.client.CookieStore;
-import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
-import cz.msebera.android.httpclient.client.protocol.ClientContext;
-import cz.msebera.android.httpclient.impl.client.DefaultHttpClient;
+import okhttp3.Cookie;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 
 /**
  * Promise Http Client
@@ -55,46 +58,6 @@ public class PromiseHttp {
 
     public String getBaseUrl() {
         return baseUrl;
-    }
-
-
-    public PromiseHttp setTimeout(int timeout){
-        this.httpClient.setTimeout(timeout);
-        return this;
-    }
-    public PromiseHttp setConnectTimeout(int timeout){
-        this.httpClient.setConnectTimeout(timeout);
-        return this;
-    }
-    public PromiseHttp setResponseTimeout(int timeout){
-        this.httpClient.setResponseTimeout(timeout);
-        return this;
-    }
-
-    public int getConnectTimeout(){
-        return this.httpClient.getConnectTimeout();
-    }
-    public int getResponseTimeout(){
-        return this.httpClient.getResponseTimeout();
-    }
-
-
-    /**
-     * 获取Cookies
-     * @return Cookies
-     */
-    public CookieStore getCookieStore(){
-        return ((DefaultHttpClient)this.httpClient.getHttpClient()).getCookieStore();
-    }
-
-    public PromiseHttp setCookieStore(CookieStore cookieStore){
-        this.httpClient.setCookieStore(cookieStore);
-        return this;
-    }
-
-    public void clearCookies(){
-        ((CookieStore)this.httpClient.getHttpContext().getAttribute(ClientContext.COOKIE_STORE)).clear();
-        ((DefaultHttpClient)this.httpClient.getHttpClient()).getCookieStore().clear();
     }
 
     /**
@@ -126,15 +89,38 @@ public class PromiseHttp {
         return this;
     }
 
-    private HttpClient httpClient;
-
     private PromiseHttp(){
-        httpClient = new HttpClient();
-        httpClient.addHeader("Connection", "Keep-Alive");
-        httpClient.addHeader("Accept-Language", Locale.getDefault().toString());
     }
 
     private static PromiseHttp instance;
+
+    public static void init(Application application){
+        HttpsUtils.SSLParams sslParams = HttpsUtils.getSslSocketFactory();
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .cookieJar(new CookieJarImpl(new MemoryCookieStore()))
+                .sslSocketFactory(sslParams.sSLSocketFactory, sslParams.trustManager);
+
+
+        OkGo.getInstance().init(application)
+                .setCacheMode(CacheMode.NO_CACHE)
+                .setOkHttpClient(builder.build());
+    }
+
+    public List<Cookie> getCookies(String url){
+        return OkGo.getInstance().getOkHttpClient().cookieJar().loadForRequest(HttpUrl.parse(url));
+    }
+
+    public void clearCookies(){
+        HttpsUtils.SSLParams sslParams = HttpsUtils.getSslSocketFactory();
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .cookieJar(new CookieJarImpl(new MemoryCookieStore()))
+                .sslSocketFactory(sslParams.sSLSocketFactory, sslParams.trustManager);
+
+        OkGo.getInstance()
+                .setOkHttpClient(builder.build());
+    }
 
     /**
      * PromiseHttp 单例
@@ -195,7 +181,7 @@ public class PromiseHttp {
         return new Promise<>(new PromiseCallbackWithResolver<Object, PromiseResponse>() {
             @Override
             public void call(Object arg, PromiseResolver resolver) {
-                request.handler = _execute(request, getTextHandler(request, resolver));
+                _execute(request, getTextHandler(request, resolver));
             }
         }).alwaysAsync(new PromiseCallback<Object, PromiseResponse>() {
             @Override
@@ -228,7 +214,7 @@ public class PromiseHttp {
         return new Promise<>(new PromiseCallbackWithResolver<Object, PromiseResponse>() {
             @Override
             public void call(Object arg, PromiseResolver resolver) {
-                request.handler = _execute(request, getDownloadHandler(request, resolver));
+                _execute(request, getDownloadHandler(request, resolver));
             }
         }).alwaysAsync(new PromiseCallback<Object, PromiseResponse>() {
             @Override
@@ -252,118 +238,73 @@ public class PromiseHttp {
     /*
      * 真正执行请求的地方
      */
-    private RequestHandle _execute(final PromiseRequest request, final ResponseHandlerInterface handler){
+    private void  _execute(final PromiseRequest request, final Callback<?> handler){
 
-        HttpUriRequest req = request.getRequest(this, handler);
+        Request req = request.getRequest(this);
 
-        return httpClient.sendRequest(req, handler);
+        req.execute(handler);
     }
 
     /*
      * 非下载请求都用TextHttpResponseHandler来处理
      */
-    private ResponseHandlerInterface getTextHandler(final PromiseRequest request, final PromiseResolver resolver){
-        TextHttpResponseHandler handler = new TextHttpResponseHandler() {
+    private StringCallback getTextHandler(final PromiseRequest request, final PromiseResolver resolver){
+        return new StringCallback() {
             @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                resolver.resolve(null, new PromiseHttpException(new PromiseResponse(request, statusCode, headers, responseString), throwable));
+            public void onSuccess(Response<String> response) {
+                if (response.code() >= 400){
+                    resolver.resolve(null, new PromiseHttpException(new PromiseResponse(request, response.code(), response.headers(), response.body()), null));
+                }else {
+                    resolver.resolve(new PromiseResponse(request, response.code(), response.headers(), response.body()), null);
+                }
             }
 
             @Override
-            public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                resolver.resolve(new PromiseResponse(request, statusCode, headers, responseString), null);
+            public void onError(Response<String> response) {
+                resolver.resolve(null, new PromiseHttpException(new PromiseResponse(request, response.code(), response.headers(), response.body()), response.getException()));
+            }
+
+            @Override
+            public void downloadProgress(Progress progress) {
+                request.onDownloadProgress(progress.currentSize, progress.totalSize);
+            }
+
+            @Override
+            public void uploadProgress(Progress progress) {
+                request.onUploadProgress(progress.currentSize, progress.totalSize);
             }
         };
-
-        handler.setCharset(request.getEncoding());
-
-        return handler;
     }
 
     /*
      * 下载请求都用FileAsyncHttpResponseHandler来处理
      * 会自动生成推荐的文件名
      */
-    private ResponseHandlerInterface getDownloadHandler(final PromiseRequest request, final PromiseResolver resolver){
-        if (cachePath == null){
-            resolver.resolve(null, new UnsupportedOperationException("请先设置cachePath后再使用下载功能"));
-            return null;
-        }
-
-        if (!cachePath.exists()){
-            if (!cachePath.mkdir()){
-                resolver.resolve(null, new IllegalStateException("无法创建下载缓存目录"));
-                return null;
-            }
-        }
-
-
-        URI uri = ProcessUtils.processURI(baseUrl, request);
-
-        String suggestFileName = uri.getPath().substring(uri.getPath().lastIndexOf("/") + 1);
-
-        // URL Decode
-        try {
-            suggestFileName = URLDecoder.decode(suggestFileName, request.getEncoding());
-        }catch (Exception ex){}
-
-        if (suggestFileName.lastIndexOf(".") < 0){
-            suggestFileName = UUID.randomUUID().toString() + ".tmp";
-        }
-
-
-        File cacheFile = new File(cachePath.getAbsolutePath(), suggestFileName);
-        if (cacheFile.exists()){
-            cacheFile.delete();
-        }
-
-        FileAsyncHttpResponseHandler handler = new FileAsyncHttpResponseHandler(cacheFile) {
+    private FileCallback getDownloadHandler(final PromiseRequest request, final PromiseResolver resolver){
+        return new FileCallback(this.cachePath.getAbsolutePath(), null) {
             @Override
-            public void onFailure(int statusCode, Header[] headers, Throwable throwable, File file) {
-                resolver.resolve(null, new PromiseHttpException(new PromiseResponse(request, statusCode, headers, file), throwable));
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, File file) {
-                String fileName = "";
-                for (Header header : headers) {
-                    if ("Content-Disposition".equalsIgnoreCase(header.getName())) {
-                        HeaderElement[] elements = header.getElements();
-                        for (HeaderElement element : elements) {
-                            NameValuePair attachName = element.getParameterByName("filename");
-                            if (attachName != null){
-                                fileName = attachName.getValue();
-                            }
-                        }
-                    }
+            public void onSuccess(Response<File> response) {
+                if (response.code() >= 400){
+                    resolver.resolve(null, new PromiseHttpException(new PromiseResponse(request, response.code(), response.headers(), response.body()), null));
+                }else {
+                    resolver.resolve(new PromiseResponse(request, response.code(), response.headers(), response.body()), null);
                 }
-
-                File newFile = file;
-
-                if (!fileName.isEmpty()){
-                    try {
-                        //先转码
-                        fileName = new String(fileName.getBytes("ISO8859-1"), request.getEncoding());
-                        //再重命名
-                        newFile = new File(file.getParent(), fileName);
-                        if (!file.renameTo(newFile)){
-                            // 重命名失败了，还是用回原来的名字
-                            newFile = file;
-                        }
-                    }catch (Exception ex){
-                        throw new RuntimeException(ex);
-                    }
-                }
-
-                resolver.resolve(new PromiseResponse(request, statusCode, headers, newFile), null);
             }
 
             @Override
-            public void onProgress(long bytesWritten, long totalSize) {
-                request.onProgress(bytesWritten, totalSize);
+            public void onError(Response<File> response) {
+                resolver.resolve(null, new PromiseHttpException(new PromiseResponse(request, response.code(), response.headers(), response.body()), response.getException()));
+            }
+
+            @Override
+            public void downloadProgress(Progress progress) {
+                request.onDownloadProgress(progress.currentSize, progress.totalSize);
+            }
+
+            @Override
+            public void uploadProgress(Progress progress) {
+                request.onUploadProgress(progress.currentSize, progress.totalSize);
             }
         };
-        handler.setCharset(request.getEncoding());
-        return handler;
     }
 }

@@ -10,7 +10,6 @@ import cn.yerl.android.promise.http.PromiseHttp;
 import cn.yerl.android.promise.http.PromiseHttpException;
 import cn.yerl.android.promise.http.PromiseRequest;
 import cn.yerl.android.promise.http.PromiseResponse;
-import cz.msebera.android.httpclient.client.utils.URIBuilder;
 
 /**
  * 基础日志类
@@ -21,29 +20,30 @@ abstract class BaseLogger implements ILogger {
     private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-mm-dd HH:mm:ss.SSS");
 
     private String getRequestUrl(String baseUrl, String requestUrl){
-        try {
-            URIBuilder uriBuilder = new URIBuilder(baseUrl);
-            URI requestURI = new URI(requestUrl);
-
-            if (requestURI.getHost() != null){
-                uriBuilder = new URIBuilder(requestUrl);
-            }
-
-            if (requestURI.getPath().startsWith("/")){
-                uriBuilder.setPath(requestURI.getPath());
-            }else {
-                uriBuilder.setPath(uriBuilder.getPath() + "/" + requestURI.getPath());
-            }
-
-            if (requestURI.getQuery() != null && requestURI.getQuery().length() > 0){
-                uriBuilder.setCustomQuery(requestURI.getQuery());
-            }
-
-            return uriBuilder.build().toString();
-
-        }catch (Exception ex){
-            throw new RuntimeException(ex);
-        }
+        return requestUrl;
+//        try {
+//            URIBuilder uriBuilder = new URIBuilder(baseUrl);
+//            URI requestURI = new URI(requestUrl);
+//
+//            if (requestURI.getHost() != null){
+//                uriBuilder = new URIBuilder(requestUrl);
+//            }
+//
+//            if (requestURI.getPath().startsWith("/")){
+//                uriBuilder.setPath(requestURI.getPath());
+//            }else {
+//                uriBuilder.setPath(uriBuilder.getPath() + "/" + requestURI.getPath());
+//            }
+//
+//            if (requestURI.getQuery() != null && requestURI.getQuery().length() > 0){
+//                uriBuilder.setCustomQuery(requestURI.getQuery());
+//            }
+//
+//            return uriBuilder.build().toString();
+//
+//        }catch (Exception ex){
+//            throw new RuntimeException(ex);
+//        }
     }
 
     @Override

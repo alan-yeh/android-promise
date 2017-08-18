@@ -1,13 +1,12 @@
 package cn.yerl.android.promise.http;
 
-import com.loopj.android.http.RequestHandle;
-import com.loopj.android.http.ResponseHandlerInterface;
+import com.lzy.okgo.OkGo;
+import com.lzy.okgo.request.base.BodyRequest;
+import com.lzy.okgo.request.base.Request;
 
 import java.io.File;
-import java.io.InputStream;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
-import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,16 +17,6 @@ import java.util.Map;
 
 import cn.yerl.android.promise.core.Promise;
 import cn.yerl.android.promise.core.PromiseCallback;
-import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.HttpEntity;
-import cz.msebera.android.httpclient.MethodNotSupportedException;
-import cz.msebera.android.httpclient.client.methods.HttpDelete;
-import cz.msebera.android.httpclient.client.methods.HttpEntityEnclosingRequestBase;
-import cz.msebera.android.httpclient.client.methods.HttpGet;
-import cz.msebera.android.httpclient.client.methods.HttpHead;
-import cz.msebera.android.httpclient.client.methods.HttpPost;
-import cz.msebera.android.httpclient.client.methods.HttpPut;
-import cz.msebera.android.httpclient.client.methods.HttpUriRequest;
 
 /**
  * 封装请求参数类
@@ -64,7 +53,7 @@ public class PromiseRequest implements Serializable {
     private String urlString;
     private String encoding = "UTF-8";
     final private Date createTime;
-    RequestHandle handler;
+//    RequestHandle handler;
 
     public PromiseRequest(String url, Method method){
         this.urlString = url;
@@ -366,22 +355,42 @@ public class PromiseRequest implements Serializable {
         void onProgress(long bytesWritten, long totalSize);
     }
 
-    private List<WeakReference<OnProgressChanged>> progressListeners = new ArrayList<>();
+    private List<WeakReference<OnProgressChanged>> downloadListeners = new ArrayList<>();
 
     /**
      * 下载进度反馈
      * @param progressListener 下载进度监听器
      */
     public void addDownloadProgressListener(OnProgressChanged progressListener){
-        progressListeners.add(new WeakReference<>(progressListener));
+        downloadListeners.add(new WeakReference<>(progressListener));
     }
 
-    void onProgress(final long bytesWritten, final long totalSize){
+    private List<WeakReference<OnProgressChanged>> uploadListeners = new ArrayList<>();
+    public void addUploadProgressListener(OnProgressChanged progressListener){
+        uploadListeners.add(new WeakReference<OnProgressChanged>(progressListener));
+    }
+
+    void onDownloadProgress(final long bytesWritten, final long totalSize){
         // 切换到主线程去通知
         new Promise<>(new PromiseCallback<Object, Object>() {
             @Override
             public Object call(Object arg) {
-                for (WeakReference<OnProgressChanged> listener : progressListeners){
+                for (WeakReference<OnProgressChanged> listener : downloadListeners){
+                    if (listener.get() != null){
+                        listener.get().onProgress(bytesWritten, totalSize);
+                    }
+                }
+                return null;
+            }
+        });
+    }
+
+    void onUploadProgress(final long bytesWritten, final long totalSize){
+        // 切换到主线程去通知
+        new Promise<>(new PromiseCallback<Object, Object>() {
+            @Override
+            public Object call(Object arg) {
+                for (WeakReference<OnProgressChanged> listener : uploadListeners){
                     if (listener.get() != null){
                         listener.get().onProgress(bytesWritten, totalSize);
                     }
@@ -395,9 +404,9 @@ public class PromiseRequest implements Serializable {
      * 取消请求
      */
     public void cancel(){
-        if (!handler.isCancelled() && !handler.isFinished()){
-            handler.cancel(true);
-        }
+//        if (!handler.isCancelled() && !handler.isFinished()){
+//            handler.cancel(true);
+//        }
     }
 
     /**
@@ -475,45 +484,48 @@ public class PromiseRequest implements Serializable {
         return new HashMap<>(headers);
     }
 
-    protected HttpUriRequest getRequest(PromiseHttp http, ResponseHandlerInterface handler){
+    protected Request<?, ?> getRequest(PromiseHttp http){
         // 处理URL，将QueryParam拼接在url后
-        URI requestURI = ProcessUtils.processURI(http.getBaseUrl(), this);
+        String uri = ProcessUtils.processURI(http.getBaseUrl(), this);
 
-        // 处理参数
-        HttpEntity entity = ProcessUtils.processParams(this, handler);
 
-        HttpUriRequest request =  null;
+        Request request =  null;
         switch (this.getMethod()){
             case GET:{
-                request = new HttpGet(requestURI);
+                request = OkGo.get(uri);
                 break;
             }
             case DELETE:{
-                request = new HttpDelete(requestURI);
+                request = OkGo.delete(uri);
                 break;
             }
             case HEAD:{
-                request = new HttpHead(requestURI);
+                request = OkGo.head(uri);
                 break;
             }
             case POST:{
-                HttpEntityEnclosingRequestBase req = new HttpPost(requestURI);
-                req.setEntity(entity);
-                request = req;
+                BodyRequest bodyRequest = OkGo.post(uri);
+                ProcessUtils.processBody(this, bodyRequest);
+                request = bodyRequest;
                 break;
             }
             case PUT:{
-                HttpEntityEnclosingRequestBase req = new HttpPut(requestURI);
-                req.setEntity(entity);
-                request = req;
+                BodyRequest bodyRequest = OkGo.put(uri);
+
+                ProcessUtils.processBody(this, bodyRequest);
+                request = bodyRequest;
                 break;
             }
             default:{
             }
         }
+
+        // 处理body
+
         // 处理Header
-        Header[] headers = ProcessUtils.processHeader(http.getSharedHeaders(), this.getHeaders());
-        request.setHeaders(headers);
+
+//        Header[] headers = ProcessUtils.processHeader(http.getSharedHeaders(), this.getHeaders());
+//        request.setHeaders(headers);
         return request;
     }
 }
